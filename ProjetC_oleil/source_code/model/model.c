@@ -1,6 +1,5 @@
 #include "model.h"
 
-
 // Default variable for easy [0;0] vector creation by copy.
 const Vector2i vector2i_zero = { 0, 0 };
 
@@ -18,7 +17,7 @@ char* get_config_name(char** argv)
 
 Config load_config(const char *file_name)
 {
-	Config c = { 720, 480, 0, 0, 0, 0, 2, 10 };
+	Config c = {{720, 480}, 0, 0, 0, 0, 2, 10 };
 	app.config = &c;
 
 	assert(file_name);
@@ -78,6 +77,7 @@ void process_config_line(const char* config_name, const char* data)
 {
 	// Put the "looping" lines (like planets data) first.
 
+	// Compare the config_name argument with the config expected names.
 	if ( SDL_strcmp(config_name, CONFIG_NAME_WINDOW_SIZE) != 0)
 	{
 		app.config->window_size = read_vector(data);
@@ -102,18 +102,18 @@ void keep_player_on_screen(void)
 
 	// Left (x) boundary.
 	if (p->location.x < 0)
-		p->location.x = (float)app.config->window_size.x - (float)player_width;
+		p->location.x = app.config->window_size.x - player_width;
 
 	// Right (x) boundary.
-	if (p->location.x + (float)player_width > (float)app.config->window_size.x)
+	if (p->location.x + player_width > app.config->window_size.x)
 		p->location.x = 0;
 
 	// Up (y) boundary.
 	if (p->location.y < 0)
-		p->location.y = (float)app.config->window_size.y - (float)player_width;
+		p->location.y = app.config->window_size.y - player_width;
 
-	// down (y) boundary.
-	if (p->location.y + (float)player_width > (float)app.config->window_size.y)
+	// Down (y) boundary.
+	if (p->location.y + player_width > app.config->window_size.y)
 		p->location.y = 0;
 }
 
@@ -147,14 +147,14 @@ void init_config(const char* file_name)
 		printf("config_file_name in init_app was NULL");
 		abort();
 	}
-	Config c = load_config(file_name);
+	const Config c = load_config(file_name);
 
 	assert(c.window_size.x > 0);
 	assert(c.window_size.y > 0);
 	assert(c.nb_solar_systems > 0);
 	assert(c.player_size > 0);
 
-	// app.config = &c; // Now done in load_config
+	// app.config = &c; // For now, done in load_config
 }
 
 void init_render_window(RenderWindow *rw, const int width, const int height, const char *name)
@@ -167,6 +167,7 @@ void init_render_window(RenderWindow *rw, const int width, const int height, con
 	if ( SDL_Init(SDL_INIT_VIDEO) < 0 )
 	{
 		printf(" 1 SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+		abort();
 	}
 	else
 	{
@@ -178,26 +179,26 @@ void init_render_window(RenderWindow *rw, const int width, const int height, con
 				width,
 				height,
 			SDL_WINDOW_SHOWN
-			)
-		;
+			);
+
 		if (window == NULL)
 		{
 			printf("2 SDL could not initialize! SDL_CreateWindow returned NULL: %s\n", SDL_GetError());
-			exit(1);
+			abort();
 		}
 
 		const SDL_Renderer *renderer = rw->sdl_renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
 		if (renderer == NULL)
 		{
 			printf("3 SDL could not initialize! SDL_CreateRenderer returned NULL: %s\n", SDL_GetError());
-			exit(1);
+			abort();
 		}
 
 		const SDL_Surface *surface = rw->sdl_surface = SDL_GetWindowSurface(window);
 		if (surface == NULL)
 		{
 			printf("4 SDL could not initialize! SDL_GetWindowSurface returned NULL: %s\n", SDL_GetError());
-			exit(1);
+			abort();
 		}
 	}
 }

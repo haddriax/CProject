@@ -2,7 +2,7 @@
 #define PROJECTC_OLEIL_VUE_CONTROLLER_H
 
 #include "../model/model.h"
-#include <SDL2_gfxPrimitives.h>
+// include <SDL2_gfxPrimitives.h>
 
 extern const struct SDL_Color red;
 extern const struct SDL_Color green;
