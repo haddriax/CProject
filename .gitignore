@@ -50,3 +50,10 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+/.vs/ProjetC_oleil/FileContentIndex
+/.vs
+/x64/Debug
+/ProjetC_oleil.sln
+/ProjetC_oleil.vcxproj
+/ProjetC_oleil.vcxproj.user
+/ProjetC_oleil.vcxproj.filters
