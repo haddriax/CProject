@@ -11,6 +11,26 @@
 #define CONFIG_NAME_WINDOW_SIZE "WIN_SIZE"
 #define CONFIG_NAME_PLAYER_LOCATION "START"
 #define CONFIG_NAME_GOAL_LOCATION "END"
+#define SEPARATOR_SPACE ' '
+
+#define CONFIG_BUFFER_MAX_SIZE 16
+
+/**
+ * \brief Identifier for any line in config.txt
+ */
+typedef enum config_type
+{
+	window_size = 1,
+	player_location,
+	goal_location,
+	nb_solar_system,
+	star_pos,
+	star_radius,
+	nb_planet,
+	planet_radius,
+	planet_orbit,
+	none = 0
+} config_type;
 
 enum
 {
@@ -23,8 +43,17 @@ enum
 #pragma region Vector2f
 
 /**
-Float Vector of Dimension 2 of coordinates x and y.
-*/
+ * \brief Integer Vector of Dimension 2; Coordinates x and y.
+ */
+typedef struct Vector2f
+{
+	float x, y;
+} Vector2f;
+extern const Vector2f vector2f_zero;
+
+/**
+ * \brief Integer Vector of Dimension 2; Coordinates x and y.
+ */
 typedef struct Vector2i
 {
 	int32_t x, y;
@@ -76,7 +105,7 @@ typedef struct Clock
 typedef struct Player
 {
 	Vector2i location;
-	Vector2i thrust;
+	Vector2f thrust;
 
 } Player;
 
@@ -102,7 +131,7 @@ typedef struct SolarSystem
 typedef struct Config
 {
 	Vector2i window_size;
-	int player_start_x, player_start_y;
+	Vector2i player_start;
 	int goal_end_x, goal_end_y;
 	int nb_solar_systems;
 	int player_size;
@@ -131,7 +160,12 @@ extern App app;
 
 #pragma region File_Reading
 
-char* get_config_name(char **argv);
+/**
+ * \brief Find the name of the config file passed as a command argument.
+ * \param argv Collection of command arguments passed to the program
+ * \return Name of config file
+ */
+char* get_config_file_name(char **argv);
 
 /**
  * \brief Load and read the file from <file_name> file on disk. Abort program on error.
@@ -141,15 +175,46 @@ char* get_config_name(char **argv);
 Config load_config(const char* file_name);
 
 /**
- * \brief Read config name and select appropriate function to treat the line data.
- * \param config_name Name of the expected.
- * \param data C string only containing the data to process.
+ * \brief Find the name of a config from a line.
+ * \param line line to process
+ * \param out_config_name config name of this line, as an out parameter.
+ * \return length of the config name
  */
-void process_config_line(const char* config_name, const char* data);
+int find_config_line_name(const char* line, char* out_config_name);
+
+/**
+ * \brief Given a config_name, check if it match a config_type
+ * \param config_name Name of the config
+ * \return config_type if matching, config_type::none if there is no match
+ */
+config_type find_config_type(const char* config_name);
+
+/**
+ * \brief Get the data substring from line as a copy
+ * \param line Line to get the data from
+ * \param data_start Index where to start the substring
+ * \return alloc of char* containing data. Must be freed once used.
+ */
+char* get_data_from_line(const char* line, const int data_start);
+
+/**
+ * \brief Verify that the data seems to match the expected config_type
+ * \param data data to check
+ * \param t config_type to expect
+ * \return 1 for success, 0 if data validation failed.
+ */
+int validate_config_line(const char* data, const config_type t);
+
+/**
+ * \brief Read data and select appropriate function to process it
+ * \param data data as char*
+ * \param t config_type to select data process
+ */
+void process_data(const char* data, const config_type t);
 
 /*@brief Get a vector from a char* in config file.
 */
-Vector2i read_vector(const char* line);
+Vector2i read_vector(const char* data);
 #pragma endregion
 
 #pragma region Initializer

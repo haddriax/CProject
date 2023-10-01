@@ -6,7 +6,7 @@ const struct SDL_Color red = { 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE };
 const struct SDL_Color green = { 0x00, 0xFF, 0x00, SDL_ALPHA_OPAQUE };
 const struct SDL_Color blue = { 0x00, 0x00, 0xFF, SDL_ALPHA_OPAQUE };
 
-int handle_inputs()
+int handle_inputs(void)
 {
 	// Static <=> this variable exist only ONE time in app.
 	static SDL_Event e;
@@ -21,7 +21,6 @@ int handle_inputs()
 		{
 		case SDL_QUIT:
 			return 0;
-			break;
 		case SDL_KEYDOWN:
 			keyboard_key_down(&e.key);
 			break;
@@ -79,16 +78,15 @@ void keyboard_key_up(const SDL_KeyboardEvent* key_event)
 void update_window_name(const RenderWindow *rw, char* name, const float framerate)
 {
 	static char buffer[256];
-	// sprintf(buffer, "Projet C : Mohammed - Maelys - Gael | fps:%g", framerate);
-	sprintf(buffer, "Projet C : %g", framerate);
-	SDL_SetWindowTitle(rw->sdl_win, buffer);
+	if (sprintf_s(buffer, 256, "Projet C : %g", framerate))
+		SDL_SetWindowTitle(rw->sdl_win, buffer);
 }
 
-void draw_rectangle(const RenderWindow* rw,int coord_x, int coord_y, int width, int height, const SDL_Color* color)
+void draw_rectangle(int coord_x, int coord_y, int width, int height, const SDL_Color* color)
 {
 	const SDL_Rect fill_rect = { coord_x, coord_y, width, height };
-	SDL_SetRenderDrawColor(rw->sdl_renderer, color->r, color->g, color->b, color->a);
-	SDL_RenderFillRect(rw->sdl_renderer, &fill_rect);
+	SDL_SetRenderDrawColor(render_window.sdl_renderer, color->r, color->g, color->b, color->a);
+	SDL_RenderFillRect(render_window.sdl_renderer, &fill_rect);
 }
 
 int draw_line(int x_begin, int y_begin, int x_end, int y_end, const SDL_Color* color)
@@ -110,16 +108,16 @@ int draw_line_debug(const Vector2i* begin, const Vector2i* end)
 }
 
 
-void render_planets(RenderWindow* rw)
+void render_planets(void)
 {
 
 }
 
-void render_player(const RenderWindow* rw)
+void render_player(void)
 {
-	draw_rectangle(rw,
-		(float)app.player->location.x,
-		(float)app.player->location.y, 
+	draw_rectangle(
+		app.player->location.x,
+		app.player->location.y, 
 		PLAYER_SIZE, 
 		PLAYER_SIZE,
 		&red
@@ -134,21 +132,18 @@ void render(RenderWindow* rw)
 		{
 			SDL_SetRenderDrawColor(rw->sdl_renderer, 0x00, 0x00, 0x00, SDL_ALPHA_OPAQUE);
 			SDL_RenderClear(rw->sdl_renderer);
-			// SDL_FillRect(rw->sdl_surface, NULL, SDL_MapRGB(rw->sdl_surface->format, 0x00, 0xFF, 0x00));
 
 			SDL_UpdateWindowSurface(rw->sdl_win);
 
-			render_planets(rw);
+			render_planets();
 
-			render_player(rw);
+			render_player();
 
 			// TEST DRAW LINE
 			SDL_SetRenderDrawColor(rw->sdl_renderer, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
-
-			if (SDL_RenderDrawLine(rw->sdl_renderer, 0, 0, 450, 200) > 0)
-				printf("Failed drawing line: %s\n", SDL_GetError());
-
-			// draw_line(rw, 50, 200, 450, 200, &green);
+			const Vector2i line_begin = vector2i_zero;
+			const Vector2i line_end = { 100, 100 };
+			draw_line_debug(&line_begin, &line_end);
 
 			SDL_RenderPresent(rw->sdl_renderer);
 		}

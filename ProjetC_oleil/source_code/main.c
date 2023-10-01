@@ -1,16 +1,10 @@
 #include "vue_controller/vue_controller.h"
 
-
-const char project_name[] = "CProject";
-const int default_width = 720;
-const int default_height = 480;
-
 int main (int argc, char** argv)
 {
     // Remember : await config.txt path to be first user passed argument.
     init_app(argc, argv);
     assert(app.config != NULL);
-
     assert(app.player != NULL);
 
     Clock clock;
@@ -46,6 +40,8 @@ int main (int argc, char** argv)
     SDL_DestroyWindow(render_window.sdl_win);
     SDL_DestroyRenderer(render_window.sdl_renderer);
     SDL_Quit();
+
+    free(app.player);
 
     return 0;
 }
