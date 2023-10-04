@@ -76,6 +76,23 @@ extern const Vector2i vector2i_zero;
 Vector2i vector_add(const Vector2i* v1, const Vector2i* v2);
 
 /**
+ * \brief Return a new Vector from the addition of the 2 parameters vectors.
+ * \param v1
+ * \param v2
+ * \return New Vector2f from (v1 + v2)
+ */
+Vector2f vectorf_add(const Vector2f* v1, const Vector2f* v2);
+
+/**
+ * \brief Return a new Vector from the addition of the 2 parameters vectors (by copy).
+ * \param v1
+ * \param v2
+ * \return New Vector2f from (v1 + v2)
+ */
+Vector2f vectorf_add_cp(const Vector2f v1, const Vector2f v2);
+
+
+/**
 * \brief Return a new Vector from the substraction of the 2 parameters vectors.
 * \return New Vector2f from (v1 - v2)
 */
@@ -130,6 +147,8 @@ typedef struct Player
 
 	Vector2f velocity;
 
+	float mass;
+
 } Player;
 
 typedef struct Planet
@@ -145,6 +164,7 @@ typedef struct SolarSystem
 	SDL_Point location;
 	int radius;
 	int nb_planets;
+	float mass;
 	Planet* planets;
 
 } SolarSystem;

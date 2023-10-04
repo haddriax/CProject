@@ -446,6 +446,22 @@ Vector2i vector_add(const Vector2i *v1, const Vector2i *v2)
 	return vec;
 }
 
+Vector2f vectorf_add(const Vector2f* v1, const Vector2f* v2)
+{
+	Vector2f vec;
+	vec.x = (v1->x + v2->x);
+	vec.y = (v1->y + v2->y);
+	return vec;
+}
+
+Vector2f vectorf_add_cp(const Vector2f v1, const Vector2f v2)
+{
+	Vector2f vec;
+	vec.x = (v1.x + v2.x);
+	vec.y = (v1.y + v2.y);
+	return vec;
+}
+
 Vector2i vector_sub(const Vector2i *v1, const Vector2i *v2)
 {
 	Vector2i vec;

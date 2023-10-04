@@ -6,6 +6,7 @@ const struct SDL_Color green = { 0x00, 0xFF, 0x00, SDL_ALPHA_OPAQUE };
 const struct SDL_Color blue = { 0x00, 0x00, 0xFF, SDL_ALPHA_OPAQUE };
 const struct SDL_Color black = { 0x00, 0x00, 0x00, SDL_ALPHA_OPAQUE };
 const struct SDL_Color white = { 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE };
+const struct SDL_Color yellow = { 0xFA, 0xFA, 0x37, SDL_ALPHA_OPAQUE };
 
 int handle_inputs(void)
 {
@@ -111,6 +112,90 @@ int draw_line_debug(const Vector2i* begin, const Vector2i* end)
 	return SDL_RenderDrawLine(render_window.sdl_renderer, begin->x, begin->y, end->x, end->y);
 }
 
+int draw_circle(SDL_Renderer* renderer, const int32_t centre_x, const int32_t centre_y, const int32_t radius)
+{
+	const int32_t diameter = (radius * 2);
+
+	int32_t x = (radius - 1);
+	int32_t y = 0;
+	int32_t tx = 1;
+	int32_t ty = 1;
+	int32_t error = (tx - diameter);
+
+	while (x >= y)
+	{
+		//  Each of the following renders an octant of the circle
+		SDL_RenderDrawPoint(renderer, centre_x + x, centre_y - y);
+		SDL_RenderDrawPoint(renderer, centre_x + x, centre_y + y);
+		SDL_RenderDrawPoint(renderer, centre_x - x, centre_y - y);
+		SDL_RenderDrawPoint(renderer, centre_x - x, centre_y + y);
+		SDL_RenderDrawPoint(renderer, centre_x + y, centre_y - x);
+		SDL_RenderDrawPoint(renderer, centre_x + y, centre_y + x);
+		SDL_RenderDrawPoint(renderer, centre_x - y, centre_y - x);
+		SDL_RenderDrawPoint(renderer, centre_x - y, centre_y + x);
+
+		if (error <= 0)
+		{
+			++y;
+			error += ty;
+			ty += 2;
+		}
+
+		if (error > 0)
+		{
+			--x;
+			tx += 2;
+			error += (tx - diameter);
+		}
+	}
+
+	return 1;
+}
+
+
+int render_fill_circle(SDL_Renderer* renderer, int x, int y, int radius)
+{
+	int offsetx, offsety, d;
+	int status;
+
+	offsetx = 0;
+	offsety = radius;
+	d = radius - 1;
+	status = 0;
+
+	while (offsety >= offsetx) {
+
+		status += SDL_RenderDrawLine(renderer, x - offsety, y + offsetx,
+			x + offsety, y + offsetx);
+		status += SDL_RenderDrawLine(renderer, x - offsetx, y + offsety,
+			x + offsetx, y + offsety);
+		status += SDL_RenderDrawLine(renderer, x - offsetx, y - offsety,
+			x + offsetx, y - offsety);
+		status += SDL_RenderDrawLine(renderer, x - offsety, y - offsetx,
+			x + offsety, y - offsetx);
+
+		if (status < 0) {
+			status = -1;
+			break;
+		}
+
+		if (d >= 2 * offsetx) {
+			d -= 2 * offsetx + 1;
+			offsetx += 1;
+		}
+		else if (d < 2 * (radius - offsety)) {
+			d += 2 * offsety - 1;
+			offsety -= 1;
+		}
+		else {
+			d += 2 * (offsety - offsetx - 1);
+			offsety -= 1;
+			offsetx += 1;
+		}
+	}
+
+	return status;
+}
 
 void render_planets(void)
 {
@@ -142,7 +227,9 @@ void render(void)
 			SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
 			SDL_RenderFillRect(render_window.sdl_renderer, app.entities->end); // Render Goal. @todo add offset to center it's coord.
 
-			// TEST DRAW LINE
+			SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(yellow));
+			render_fill_circle(render_window.sdl_renderer, 100, 100, 25);
+			
 			SDL_RenderPresent(render_window.sdl_renderer);
 		}
 		else

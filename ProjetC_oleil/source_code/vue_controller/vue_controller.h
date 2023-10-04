@@ -70,6 +70,26 @@ int draw_line_p(const SDL_FPoint* begin, const SDL_FPoint* end, const SDL_Color*
  * \return O on success, or a negative code on failure.
  */
 int draw_line_debug(const Vector2i* begin, const Vector2i* end);
+
+/**
+ * \brief Imported code - Replacement for glx
+ * \param renderer 
+ * \param centre_x 
+ * \param centre_y 
+ * \param radius 
+ * \return 
+ */
+int draw_circle(SDL_Renderer* renderer, int32_t centre_x, int32_t centre_y, int32_t radius);
+
+/**
+ * \brief Imported code - Replacement for glx
+ * \param renderer 
+ * \param x 
+ * \param y 
+ * \param radius 
+ * \return 
+ */
+int render_fill_circle(SDL_Renderer* renderer, int x, int y, int radius);
 #pragma endregion
 
 void render_planets(void);
