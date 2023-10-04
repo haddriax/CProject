@@ -2,11 +2,13 @@
 #define PROJECTC_OLEIL_VUE_CONTROLLER_H
 
 #include "../model/model.h"
-// include <SDL2_gfxPrimitives.h>
+// #include <SDL2_gfxPrimitives.h>
 
 extern const struct SDL_Color red;
 extern const struct SDL_Color green;
 extern const struct SDL_Color blue;
+extern const struct SDL_Color white;
+extern const struct SDL_Color black;
 
 typedef struct KeyFlags
 {
@@ -60,7 +62,7 @@ int draw_line(int x_begin, int y_begin, int x_end, int y_end, const SDL_Color* c
  * \param color Line color
  * \return O on success, or a negative code on failure.
  */
-int draw_line_v(const Vector2i* begin, const Vector2i* end, const SDL_Color* color);
+int draw_line_p(const SDL_FPoint* begin, const SDL_FPoint* end, const SDL_Color* color);
 /**
  * \brief Draw a red line from vector parameters
  * \param begin Begin point
@@ -71,9 +73,13 @@ int draw_line_debug(const Vector2i* begin, const Vector2i* end);
 #pragma endregion
 
 void render_planets(void);
+
+/**
+ * \brief Render player as a filled red rectangle using Its SDL_FRect.
+ */
 void render_player(void);
 
 // Execute all the rendering. Loop each frame.
-void render(RenderWindow *rw);
+void render(void);
 
 #endif //PROJECTC_OLEIL_VUE_CONTROLLER_H

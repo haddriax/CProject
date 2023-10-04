@@ -11,9 +11,16 @@
 #define CONFIG_NAME_WINDOW_SIZE "WIN_SIZE"
 #define CONFIG_NAME_PLAYER_LOCATION "START"
 #define CONFIG_NAME_GOAL_LOCATION "END"
+#define CONFIG_NAME_NUMBER_OF_SYSTEMS "NB_SOLAR_SYSTEM"
 #define SEPARATOR_SPACE ' '
 
+#define COLOR_PARAMS(x) x.r, x.g, x.b, x.a
+
+#define GRAVITY = 9.81f
+
 #define CONFIG_BUFFER_MAX_SIZE 16
+
+#define PLAYER_SIZE 10
 
 /**
  * \brief Identifier for any line in config.txt
@@ -35,7 +42,7 @@ typedef enum config_type
 enum
 {
 	max_config_lines = 64,
-	max_config_buffer_size = 256
+	max_config_large_buffer_size = 256
 };
 
 #define FILE_MODE_READONLY "r"
@@ -56,17 +63,21 @@ extern const Vector2f vector2f_zero;
  */
 typedef struct Vector2i
 {
-	int32_t x, y;
+	int x, y;
 } Vector2i;
 extern const Vector2i vector2i_zero;
 
-/** @brief: Return a new Vector from the addition of the 2 parameters vectors.
-@return: New Vector2f from (v1 + v2)
-*/
+/**
+ * \brief Return a new Vector from the addition of the 2 parameters vectors.
+ * \param v1 
+ * \param v2 
+ * \return New Vector2f from (v1 + v2)
+ */
 Vector2i vector_add(const Vector2i* v1, const Vector2i* v2);
 
-/** @brief: Return a new Vector from the substraction of the 2 parameters vectors.
-@return: New Vector2f from (v1 - v2)
+/**
+* \brief Return a new Vector from the substraction of the 2 parameters vectors.
+* \return New Vector2f from (v1 - v2)
 */
 Vector2i vector_sub(const Vector2i* v1, const Vector2i* v2);
 
@@ -86,9 +97,10 @@ void vector_normalize(Vector2i* v);
 */
 float vector_length(const Vector2i* v);
 
-/** @todo !
-@brief: Calculate the length² of v. Use it for comparison over vector_length
-@return: Length of v.
+/**
+* @todo !
+* @brief: Calculate the (length*length) of v. Use it for comparison over vector_length
+* @return: Length of v.
 */
 float vector_length_squared(const Vector2i* v);
 
@@ -101,17 +113,28 @@ typedef struct Clock
 	Uint64 delta_ticks;
 } Clock;
 
-/* @brief: Container for Player data */
+/**
+ * \brief Container for Player data
+ */
 typedef struct Player
 {
-	Vector2i location;
-	Vector2f thrust;
+	/**
+	 * \brief Player location (center of the rectangle)
+	 */
+	SDL_FPoint location;
+
+	/**
+	 * \brief Rectangle for rendering and collision.
+	 */
+	SDL_FRect draw_rect;
+
+	Vector2f velocity;
 
 } Player;
 
 typedef struct Planet
 {
-	SDL_Point location;
+	SDL_FPoint location;
 	int radius;
 	int orbit;
 
@@ -126,13 +149,20 @@ typedef struct SolarSystem
 
 } SolarSystem;
 
+typedef struct Entities
+{
+	Player* player;
+	SDL_Rect* end;
+	SolarSystem** solar_systems;
+	
+} Entities;
 
 /** @brief: Contain the data from the Config.txt file on disk */
 typedef struct Config
 {
 	Vector2i window_size;
-	Vector2i player_start;
-	int goal_end_x, goal_end_y;
+	SDL_FPoint player_start;
+	SDL_FPoint goal_end;
 	int nb_solar_systems;
 	int player_size;
 
@@ -151,9 +181,9 @@ extern RenderWindow render_window;
 typedef struct App
 {
 	Config* config;
-	Player* player;
+	Entities* entities;
 	int mouse_x, mouse_y;
-	SolarSystem** solar_systems;
+	int simulation_started;
 } App;
 // Global variable, container for App wide data.
 extern App app;
@@ -212,9 +242,28 @@ int validate_config_line(const char* data, const config_type t);
  */
 void process_data(const char* data, const config_type t);
 
-/*@brief Get a vector from a char* in config file.
-*/
+
+/**
+ * \brief Read a Vector2i from a char*. X and Y values must be separated by a space.
+ * \param data Input data
+ * \return Resulting Vector2i
+ */
 Vector2i read_vector(const char* data);
+
+/**
+ * \brief Read a SDL_FPoint from a char*. X and Y values must be INTEGERS and separated by a space.
+ * \note Config can only store Int, so this function expects to find Integers and cast them to floats.
+ * \param data Input data
+ * \return Resulting SDL_FPoint
+ */
+SDL_FPoint read_float_point(const char* data);
+
+/**
+ * \brief Read an Integer from a char*.
+ * \param data Input data
+ * \return Resulting int
+ */
+int read_int(const char* data);
 #pragma endregion
 
 #pragma region Initializer
@@ -233,11 +282,18 @@ void init_app(int n_args, char** argv);
 void init_config(const char* file_name);
 
 /** @brief Initialize the window and SDL context. */
-void init_render_window(RenderWindow* rw, int width, int height, const char *name);
+void init_render_window(int width, int height, const char *name);
 #pragma endregion
 
 /** @brief Loop the player through the window border, so it stays in the window. */
 void keep_player_on_screen(void);
+
+/**
+ * \brief Read the Player coordinates and update Its rectangle coordinates (add offset to center location with rect).
+ */
+void player_update(void);
+
+void apply_player_velocity(void);
 
 /**
  * \brief Compute physic (forces and movement) and apply new position to entities.

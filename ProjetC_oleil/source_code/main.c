@@ -5,12 +5,13 @@ int main (int argc, char** argv)
     // Remember : await config.txt path to be first user passed argument.
     init_app(argc, argv);
     assert(app.config != NULL);
-    assert(app.player != NULL);
+    assert(app.entities != NULL);
+    assert(app.entities->player != NULL);
 
     Clock clock;
     clock.last_time = SDL_GetTicks64();
-    clock.current_time = 0;
-    clock.delta_ticks = 0;
+    // clock.current_time = 0;
+    // clock.delta_ticks = 0;
 
     // Expected time for a frame, in milliseconds.
     const Uint64 frame_duration_ms = (1000 / 60);
@@ -29,7 +30,7 @@ int main (int argc, char** argv)
             // Gameplay update
             game_loop();
             // Drawing shapes
-            render(&render_window);
+            render();
 
             // Remember the time at which this frame end.
             clock.last_time = SDL_GetTicks64();
@@ -41,7 +42,9 @@ int main (int argc, char** argv)
     SDL_DestroyRenderer(render_window.sdl_renderer);
     SDL_Quit();
 
-    free(app.player);
+
+    free(app.entities->end);
+    free(app.entities->player);
 
     return 0;
 }
