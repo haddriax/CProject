@@ -3,6 +3,7 @@
 
 #include <SDL.h>
 #include <stdio.h>
+#include <assert.h>
 
 #pragma region Vector2f
 
@@ -61,6 +62,8 @@ typedef struct Player
 {
 	SDL_Point location;
 	Vector2f thrust;
+	Vector2f grav;
+	Vector2f result;
 
 } Player;
 
@@ -98,6 +101,8 @@ Config load_config(char* file_name);
 
 /** @brief Initialize the window and SDL context. */
 void init_RenderWindow(RenderWindow* rw, int w, int h);
+
+void init_player(Player* p);
 
 void physic_update();
 

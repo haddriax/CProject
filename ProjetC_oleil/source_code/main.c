@@ -7,10 +7,8 @@ const int default_height = 480;
 int main (int argc, char** argv)
 {;
     Player p = { 0, 0, vector2f_zero };
-    p.thrust.x = 1; // DEBUG THRUST
-    p.thrust.y = 1; // DEBUG THRUST
-
     app.player = &p;
+    init_player(&p);
 
     struct Clock clock;
 

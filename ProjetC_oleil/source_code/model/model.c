@@ -86,19 +86,60 @@ struct Vector2f sub_vector(const Vector2f *v1, const Vector2f *v2)
 	return vec;
 }
 
+struct Vector2f vector_divi(const Vector2f* v, float divisor)
+{
+	assert(divisor > 0);
+	Vector2f res = { v->x / divisor, v->y / divisor };
+	return res;
+}
+
 float dot_product(const Vector2f *v1, const Vector2f *v2)
 {
 	return ((v1->x * v2->x) + (v1->y * v2->y));
 }
+
+void vector_normalize(Vector2f* v)
+{
+	int x = v->x;
+	int y = (*v).y;
+	return vector_divi(v, sqrt(x * x + y * y));
+}
+
+struct Vector2f grav(int d, int mv, int mp, const int G, const Vector2f *distance)
+{
+	float F = G * (mv * mp) / (d * d);
+	Vector2f v = { F * distance->x, F* distance->y };
+	return v ;
+
+}
+
+struct Vector2f somme_forces()
+{
+
+
+}
+
+
 
 void gameloop()
 {
 	physic_update();
 }
 
+void init_player(Player* p)
+{
+	p->thrust.x = 1; // DEBUG THRUST
+	p->thrust.y = 1; // DEBUG THRUST
+}
+
 void physic_update()
 {
-	app.player->location.x += app.player->thrust.x;
-	app.player->location.y += app.player->thrust.y;
+	Player* p = app.player;
+
+	
+
+	p->location.x += p->thrust.x;
+	p->location.y += p->thrust.y;
+	
 }
 
