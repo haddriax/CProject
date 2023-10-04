@@ -79,8 +79,8 @@ Config load_config(const char *file_name)
 				printf("%s\n", "Error closing config files." );
 
 			// Setup end location. From config to actual game data.
-			app.entities->end->x = app.config->goal_end.x;
-			app.entities->end->y = app.config->goal_end.y;
+			app.entities->end->x = (int)app.config->goal_end.x;
+			app.entities->end->y = (int)app.config->goal_end.y;
 		}
 	}
 
@@ -438,7 +438,7 @@ void init_render_window(const int width, const int height, const char *name)
 	}
 }
 
-struct Vector2i vector_add(const Vector2i *v1, const Vector2i *v2)
+Vector2i vector_add(const Vector2i *v1, const Vector2i *v2)
 {
 	Vector2i vec;
 	vec.x = (v1->x + v2->x);
@@ -446,7 +446,7 @@ struct Vector2i vector_add(const Vector2i *v1, const Vector2i *v2)
 	return vec;
 }
 
-struct Vector2i vector_sub(const Vector2i *v1, const Vector2i *v2)
+Vector2i vector_sub(const Vector2i *v1, const Vector2i *v2)
 {
 	Vector2i vec;
 	vec.x = (v1->x - v2->x);
@@ -468,25 +468,26 @@ void player_update(void)
 }
 
 void apply_player_velocity(void)
-struct Vector2f vector_divi(const Vector2f* v, float divisor)
+{
+	app.entities->player->location.x += app.entities->player->velocity.x;
+	app.entities->player->location.y += app.entities->player->velocity.y;
+}
+
+Vector2f vector_divi(const Vector2f* v, float divisor)
 {
 	assert(divisor > 0);
 	Vector2f res = { v->x / divisor, v->y / divisor };
 	return res;
 }
 
-float dot_product(const Vector2f *v1, const Vector2f *v2)
-{
-	app.entities->player->location.x += app.entities->player->velocity.x;
-	app.entities->player->location.y += app.entities->player->velocity.y;
-}
-
+/*
 void vector_normalize(Vector2f* v)
 {
 	int x = v->x;
 	int y = (*v).y;
 	return vector_divi(v, sqrt(x * x + y * y));
 }
+*/
 
 struct Vector2f grav(int d, int mv, int mp, const int G, const Vector2f *distance)
 {
@@ -503,8 +504,7 @@ struct Vector2f somme_forces()
 }
 
 
-
-void gameloop()
+void game_loop(void)
 {
 	physic_update();
 }
@@ -520,10 +520,3 @@ void physic_update(void)
 		player_update();
 	}
 }
-
-void physic_update()
-{
-
-	
-}
-
