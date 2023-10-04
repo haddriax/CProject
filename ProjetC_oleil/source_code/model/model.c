@@ -512,27 +512,18 @@ void gameloop()
 void physic_update(void)
 {
 	// keep_player_on_screen();
-	if ( app.simulation_started )
+	if (app.simulation_started)
 	{
 		app.entities->player->velocity.x = 1.7f;
 		app.entities->player->velocity.y = 1.00f;
 		apply_player_velocity();
 		player_update();
 	}
-void init_player(Player* p)
-{
-	p->thrust.x = 1; // DEBUG THRUST
-	p->thrust.y = 1; // DEBUG THRUST
 }
 
 void physic_update()
 {
-	Player* p = app.player;
 
-	
-
-	p->location.x += p->thrust.x;
-	p->location.y += p->thrust.y;
 	
 }
 
