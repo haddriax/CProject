@@ -97,25 +97,29 @@ int find_config_line_name(const char* line, char* out_config_name)
 
 config_type find_config_type(const char* config_name)
 {
-	if (SDL_strcmp(config_name, CONFIG_NAME_WINDOW_SIZE) == 0)
+    if (SDL_strcmp(config_name, CONFIG_NAME_PLANET_RADIUS) == 0)
+        return planet_radius;
+    else if (SDL_strcmp(config_name, CONFIG_NAME_PLANET_ORBIT) == 0)
+        return planet_orbit;
+    else if (SDL_strcmp(config_name, CONFIG_NAME_STAR_POS) == 0)
+        return star_pos;
+    else if (SDL_strcmp(config_name, CONFIG_NAME_STAR_RADIUS) == 0)
+        return star_radius;
+    else if (SDL_strcmp(config_name, CONFIG_NAME_NB_PLANET) == 0)
+        return nb_planet;
+	else if (SDL_strcmp(config_name, CONFIG_NAME_WINDOW_SIZE) == 0)
 		return window_size;
-	if (SDL_strcmp(config_name, CONFIG_NAME_PLAYER_LOCATION) == 0)
+	else if (SDL_strcmp(config_name, CONFIG_NAME_PLAYER_LOCATION) == 0)
 		return player_location;
-	if (SDL_strcmp(config_name, CONFIG_NAME_GOAL_LOCATION) == 0)
+    else if (SDL_strcmp(config_name, CONFIG_NAME_GOAL_LOCATION) == 0)
 		return goal_location;
-	if (SDL_strcmp(config_name, CONFIG_NAME_NUMBER_OF_SYSTEMS) == 0)
+    else if (SDL_strcmp(config_name, CONFIG_NAME_NUMBER_OF_SYSTEMS) == 0)
 		return nb_solar_system;
-	if (SDL_strcmp(config_name, CONFIG_NAME_STAR_POS) == 0)
-		return star_pos;
-	if (SDL_strcmp(config_name, CONFIG_NAME_STAR_RADIUS) == 0)
-		return star_radius;
-	if (SDL_strcmp(config_name, CONFIG_NAME_NB_PLANET) == 0)
-		return nb_planet;
 	else
 	{
         fprintf(stderr, "%s%s\n", config_name, ": Config not handled.");  // NOLINT(cert-err33-c) - Error Output
+        return none;
 	}
-	return none;
 }
 
 char* get_data_from_line(const char* line, const int data_start)
@@ -149,6 +153,24 @@ int validate_is_int(const char* data)
 	return 1;
 }
 
+int validate_is_signed_int(const char *data)
+{
+    size_t i = 0;
+    // Check if first char is the sign
+    if (data[0] == '-')
+        i = 1;
+
+    for (i = 1; i < SDL_strlen(data); ++i)
+    {
+        if (SDL_isspace(data[i])) // Want no space
+            return 0;
+
+        if (SDL_isalpha(data[i])) // Want no alpha char
+            return 0;
+    }
+    return 1;
+}
+
 int validate_is_vector(const char* data)
 {
 	int space_counter = 0;
@@ -179,11 +201,12 @@ int validate_config_line(const char* data, const config_type t)
 		case star_radius:
 		case nb_planet:
 		case planet_radius:
-		case planet_orbit:
 			return validate_is_int(data);
+        case planet_orbit:
+            return validate_is_signed_int(data);
 		case none:
 		default:
-			printf("Can't validate: %s.\n", data);
+			fprintf(stderr,"Can't validate: [%s].\n", data);
 			return 0;
 	}
 }
@@ -310,6 +333,29 @@ int read_int(const char* data)
 	return SDL_atoi(data);
 }
 
+int read_signed_int(const char *data)
+{
+    const int data_length = (int)SDL_strlen(data);
+    assert(data_length > 0);
+
+    int i = 0;
+    if (data[0] == '-')
+        i = 1;
+    for (; i < (data_length-1); ++i)
+    {
+        if ( !SDL_isalnum((int)data[i]) )
+        {
+            if ( data[i] != SEPARATOR_SUBSTRACT )
+            {
+                fprintf(stderr, "Could not read [%s] from config, expected an Int.", data);  // NOLINT(cert-err33-c) - Error Output
+                abort();
+            }
+        }
+    }
+    // Multiply by -1 or 1, depending on first char.
+    return (SDL_atoi(data) * (data[0] == '-' ? -1 : 1));
+}
+
 SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location)
 {
 	char line[64];
@@ -360,27 +406,36 @@ SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location)
 		char* data = get_data_from_line(line, name_length);
 		// 4/ First data validation.
 		const int data_validated = validate_config_line(data, t);
-		// 5/ Read and apply data. Here NB_PLANET.
 
+		// 5/ Read and apply data. Here NB_PLANET.
 		s->nb_planets = read_int(data);
         // printf("NB PLANETS [%i]\n", s->nb_planets );
 
 		// 6/ For each expected planet.
+        s->planets = calloc(s->nb_planets, sizeof(Planet));
 		for (int i = 0; i < s->nb_planets; ++i)
 		{
-			if (fgets(line, 64, file) != NULL)
-			{
-				// printf("Ignored %s\n", line);
-
-				// @todo CREATE PLANETS!
-			}
-
-			if (fgets(line, 64, file) != NULL)
-			{
-				// printf("Ignored %s\n", line);
-
-				// @todo CREATE PLANETS!
-			}
+            int orbit, radius;
+            if (fgets(line, 64, file) != NULL)
+            {
+                // 1/ Get config name.
+                const int name_length = find_config_line_name(line, config_name);
+                const config_type t = find_config_type(config_name);
+                char* data = get_data_from_line(line, name_length);
+                const int data_validated = validate_config_line(data, t);
+                orbit = read_signed_int(data);
+            }
+            if (fgets(line, 64, file) != NULL)
+            {
+                // 1/ Get config name.
+                const int name_length = find_config_line_name(line, config_name);
+                const config_type t = find_config_type(config_name);
+                char* data = get_data_from_line(line, name_length);
+                const int data_validated = validate_config_line(data, t);
+                radius = read_int(data);
+            }
+            // Use read data to create planet.
+            build_planets(s, orbit, radius, i);
 		}
 
 		free(data);
@@ -392,52 +447,12 @@ SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location)
 	return (app.entities->solar_systems[creation_id++]);
 }
 
-SolarSystem* build_solar_systems(FILE* file, int number_of_systems)
+Planet *build_planets(SolarSystem *parent_system, int orbit, int radius, int index)
 {
-	char buffer[CONFIG_BUFFER_MAX_SIZE];
-	char buffer2[16];
-
-	app.entities->nb_solar_systems = number_of_systems;
-	app.entities->solar_systems = malloc(sizeof(SolarSystem));
-	SolarSystem* s = calloc(1, sizeof(SolarSystem));
-
-	if (s == NULL)
-		return NULL;
-
-	for (int i = 0; i < number_of_systems; ++i)
-	{
-		if (fgets(buffer, CONFIG_BUFFER_MAX_SIZE, file))
-		{
-			// STAR_POS
-			const int name_length = find_config_line_name(buffer, buffer2);
-			const Vector2i v = read_vector( get_data_from_line(buffer, name_length) );
-			s->location.x = v.x;
-			s->location.y = v.y;
-		}
-
-		if (fgets(buffer, CONFIG_BUFFER_MAX_SIZE, file))
-		{
-			// STAR_RADIUS
-			const int name_length = find_config_line_name(buffer, buffer2);
-			s->radius = read_int(get_data_from_line(buffer, name_length));
-		}
-
-		if (fgets(buffer, CONFIG_BUFFER_MAX_SIZE, file))
-		{
-			// NB_PLANET
-			int nb_planets = 0;
-			build_planets(s, nb_planets);
-		}
-
-		app.entities->solar_systems[i] = s;
-	}
-
-	return NULL;
-}
-
-Planet* build_planets(SolarSystem* s, int number_of_planets)
-{
-	return NULL;
+    parent_system->planets[index].radius = radius;
+    parent_system->planets[index].orbit = orbit;
+    parent_system->planets[index].parent_system = parent_system;
+	return &parent_system->planets[index];
 }
 
 void keep_player_on_screen(void)

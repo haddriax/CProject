@@ -16,6 +16,8 @@
 #define CONFIG_NAME_STAR_POS "STAR_POS"
 #define CONFIG_NAME_STAR_RADIUS "STAR_RADIUS"
 #define CONFIG_NAME_NB_PLANET "NB_PLANET"
+#define CONFIG_NAME_PLANET_RADIUS "PLANET_RADIUS"
+#define CONFIG_NAME_PLANET_ORBIT "PLANET_ORBIT"
 #define SEPARATOR_SPACE ' '
 #define SEPARATOR_SUBSTRACT '-'
 
@@ -160,7 +162,7 @@ typedef struct Planet
 	SDL_FPoint location;
 	int radius;
 	int orbit;
-
+    struct SolarSystem* parent_system;
 } Planet;
 
 typedef struct SolarSystem
@@ -260,6 +262,13 @@ char* get_data_from_line(const char* line, const int data_start);
 int validate_is_int(const char* data);
 
 /**
+ * \brief Ensure the data char* contain only alphanumerical char, no spaces but eventual char 0 to be '-' .
+ * \param data data to validate.
+ * \return 1 Success, 0 otherwise.
+ */
+int validate_is_signed_int(const char* data);
+
+/**
  * \brief Ensure the data char* contain only numerical char and exactly 1 space.
  * \param data data to validate.
  * \return 1 Success, 0 otherwise.
@@ -304,6 +313,13 @@ SDL_FPoint read_float_point(const char* data);
  * \return Resulting int
  */
 int read_int(const char* data);
+
+/**
+ * \brief Read a signed Integer from a char*.
+ * \param data Input data
+ * \return Resulting int
+ */
+int read_signed_int(const char* data);
 #pragma endregion
 
 #pragma region Initializer
@@ -318,15 +334,7 @@ int read_int(const char* data);
  */
 SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location);
 
-/**
- * \brief From a file and the number of solar system, create them all. Call after reading the NB_SOLAR_SYSTEM config
- * \param file Config file stream
- * \param number_of_systems Line from File containing the number of expected system. 
- * \return Pointer to the beginning of the SolarSystem list.
- */
-SolarSystem* build_solar_systems(FILE* file, int number_of_systems);
-
-Planet* build_planets(SolarSystem* s, int number_of_planets);
+Planet *build_planets(SolarSystem *parent_system, int orbit, int radius, int index);
 
 /**
  * \brief Initialize application, reading config file 
