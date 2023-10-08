@@ -21,12 +21,13 @@ Config load_config(const char *file_name)
 	assert(file_name);
 	if (file_name != NULL)
 	{
+		int line_index = 0;
 		// Open file.
 		FILE* file = NULL;
 		const errno_t e = fopen_s(&file, file_name, FILE_MODE_READONLY);
 		if ( e ) // ERROR HANDLING - OPENING FAILED.
 		{		
-			printf("%s\n","Error when opening config file.");
+			fprintf(stderr, "%s\n", "Error when opening config file.");  // NOLINT(cert-err33-c) - Error Output
 			abort();
 		}
 
@@ -34,15 +35,12 @@ Config load_config(const char *file_name)
 		if (file != NULL)
 		{
 			// Buffer for reading line from the file.
-			char line[max_config_large_buffer_size];	
-			int line_index = 0;
+			char line[max_config_large_buffer_size];
 
 			while ( fgets(line, max_config_lines, file) )
 			{
+				// 0/ Prepare a buffer.
 				char config_name[CONFIG_BUFFER_MAX_SIZE];
-				
-				// Process line
-				// printf("%s\n", line);
 
 				// 1/ Get config name.
 				const int name_length = find_config_line_name(line, config_name);
@@ -50,33 +48,29 @@ Config load_config(const char *file_name)
 				// 2/ Identify the data type we want to load, using config name
 				const config_type t = find_config_type(config_name);
 
-				// Get the data
+				// 3/ Separate the data from the config name.
 				char *data = get_data_from_line(line, name_length);
 
-				// 3/ Validate Data on the line, ex: matching type with our expectation
-				// 3bis/ Facultative : Validate data with line number 
+				// 4/ First data validation.
 				const int data_validated = validate_config_line(data, t);
 				if ( data_validated )
 				{
-					process_data(data, t);
-					// 4/ Load data from line, validate data integrity (value are sane)
-
-					
-					// 5/ Put data into the config structure.
-
-					// process_data(w1, w2);
+					// 5/ Process validated data.
+					process_data(data, t, file, &line_index);
 				}
 				else
 				{
-					// printf("%s\n", "Not valid.");
+					fprintf(stderr,"%s\n", "Not valid.");  // NOLINT(cert-err33-c) - Error Output
 				}
 
+				if (t != nb_solar_system)
+					++line_index;
+
 				free(data);
-				++line_index;
 			}
 			const int closed = fclose(file);
 			if (!closed)
-				printf("%s\n", "Error closing config files." );
+				fprintf(stderr, "%s\n", "Error closing config files.");  // NOLINT(cert-err33-c) - Error Output
 
 			// Setup end location. From config to actual game data.
 			app.entities->end->x = (int)app.config->goal_end.x;
@@ -90,7 +84,7 @@ Config load_config(const char *file_name)
 int find_config_line_name(const char* line, char* out_config_name)
 {
 	int char_index = 0;
-	while ( line[char_index] != SEPARATOR_SPACE && char_index < CONFIG_BUFFER_MAX_SIZE )
+	while ( (line[char_index] != SEPARATOR_SPACE) && (char_index < CONFIG_BUFFER_MAX_SIZE) )
 		++char_index;
 	SDL_strlcpy(out_config_name, line, ++char_index);
 
@@ -107,9 +101,15 @@ config_type find_config_type(const char* config_name)
 		return goal_location;
 	if (SDL_strcmp(config_name, CONFIG_NAME_NUMBER_OF_SYSTEMS) == 0)
 		return nb_solar_system;
+	if (SDL_strcmp(config_name, CONFIG_NAME_STAR_POS) == 0)
+		return star_pos;
+	if (SDL_strcmp(config_name, CONFIG_NAME_STAR_RADIUS) == 0)
+		return star_radius;
+	if (SDL_strcmp(config_name, CONFIG_NAME_NB_PLANET) == 0)
+		return nb_planet;
 	else
 	{
-		printf("%s%s\n", config_name, ": Config not handled yet.");
+		printf("%s%s\n", config_name, ": Config not handled yet."); // Indication Output
 	}
 	return none;
 }
@@ -125,66 +125,70 @@ char* get_data_from_line(const char* line, const int data_start)
 	}
 	else
 	{
-		printf("%s: %s\n", line, "could not copy data from configs.");
+		fprintf(stderr, "%s: %s\n", line, "could not copy data from configs.");  // NOLINT(cert-err33-c) - Error Output
 		return 0;
 	}
 
 	return data;
 }
 
-int validate_config_line(const char* data, const config_type t)
+int validate_is_int(const char* data)
 {
-	int space_counter = 0;
-	int validate_char = 1;
-	switch (t)
+	for (size_t i = 0; i < SDL_strlen(data); ++i)
 	{
-	case window_size:
-	case player_location:
-	case goal_location:
-		for (size_t i = 0; i < SDL_strlen(data); ++i)
-		{
-			if (SDL_isspace(data[i])) // Want exactly one space
-				++space_counter;
+		if (SDL_isspace(data[i])) // Want no space
+			return 0;
 
-			if (SDL_isalpha(data[i])) // Want no alpha char
-				validate_char = 0;
-		}
-		return (space_counter == 1) && validate_char;
-	case nb_solar_system:
-		for (size_t i = 0; i < SDL_strlen(data); ++i)
-		{
-			if (SDL_isalpha(data[i])) // Want no alpha char
-				validate_char = 0;
-
-			if (SDL_isspace(data[i])) // Want no space
-				validate_char = 0;
-		}
-		return validate_char;
-	case star_pos:
-		break;
-	case star_radius:
-		break;
-	case nb_planet:
-		break;
-	case planet_radius:
-		break;
-	case planet_orbit:
-		break;
-	case none:
-		break;
-	default:
-		printf("No validation for: %s.\n", data);
-		return 1;
+		if (SDL_isalpha(data[i])) // Want no alpha char
+			return 0;
 	}
-
-	return 0;
+	return 1;
 }
 
-void process_data(const char* data, const config_type t)
+int validate_is_vector(const char* data)
+{
+	int space_counter = 0;
+	for (size_t i = 0; i < SDL_strlen(data); ++i)
+	{
+		if (SDL_isspace(data[i])) // Want exactly one space
+		{
+			++space_counter;
+			continue;
+		}
+
+		if (SDL_isalpha(data[i])) // Want no alpha char
+			return 0;
+	}
+	return (space_counter == 1);
+}
+
+int validate_config_line(const char* data, const config_type t)
+{
+	switch (t)
+	{
+		case window_size:
+		case player_location:
+		case goal_location:
+		case star_pos:
+			return validate_is_vector(data);
+		case nb_solar_system:
+		case star_radius:
+		case nb_planet:
+		case planet_radius:
+		case planet_orbit:
+			return validate_is_int(data);
+		case none:
+		default:
+			printf("Can't validate: %s.\n", data);
+			return 0;
+	}
+}
+
+void process_data(const char* data, const config_type type, FILE* file, int* line_index)
 {
 	assert(app.config != NULL);
 
-	switch (t)
+	switch (type)
 	{
 	case window_size:
 		app.config->window_size = read_vector(data);
@@ -200,9 +204,14 @@ void process_data(const char* data, const config_type t)
 		break;
 	case nb_solar_system:
 		app.config->nb_solar_systems = read_int(data);
+		app.entities->nb_solar_systems = app.config->nb_solar_systems;
+		app.entities->solar_systems = malloc(app.config->nb_solar_systems * sizeof(SolarSystem));
+		assert(app.entities->solar_systems != NULL);
 		printf("Number of systems set to %i\n", app.config->nb_solar_systems);
 		break;
 	case star_pos:
+		for (int i = 0; i < app.config->nb_solar_systems; ++i)
+			build_system(file, line_index, read_vector(data));
 		break;
 	case star_radius:
 		break;
@@ -285,14 +294,149 @@ int read_int(const char* data)
 	const int data_length = (int)SDL_strlen(data);
 	for (int i = 0; i < (data_length-1); ++i)
 	{
-		if ( !SDL_isalnum( (int)data[i]) )
+		if ( !SDL_isalnum((int)data[i]) )
 		{
-			printf("Could not read from config, expected an Int.");
-			abort();
+			if ( data[i] != SEPARATOR_SUBSTRACT )
+			{
+				fprintf(stderr, "Could not read [%s] from config, expected an Int.", data);  // NOLINT(cert-err33-c) - Error Output
+				abort();
+			}
 		}
 	}
 
 	return SDL_atoi(data);
+}
+
+SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location)
+{
+	char line[64];
+	static int creation_id = 0;
+	// Create new system.
+	SolarSystem* s = calloc(1, sizeof(SolarSystem));
+	app.entities->solar_systems[creation_id] = s;
+	if (s != NULL)
+	{
+		s->location.x = spawn_location.x;
+		s->location.y = spawn_location.y;
+		printf("STAR POS [%i:%i]\n", s->location.x, s->location.y);
+	}	
+
+	// STAR RADIUS -> int
+	if (fgets(line, 64, file) != NULL)
+	{
+		// 0/ Prepare buffer.
+		char config_name[CONFIG_BUFFER_MAX_SIZE];
+		// 1/ Get config name.
+		const int name_length = find_config_line_name(line, config_name);
+		// 2/ Identify the data type we want to load, using config name.
+		const config_type t = find_config_type(config_name);
+		// 3/ Separate the data from the config name.
+		char* data = get_data_from_line(line, name_length);
+		// 4/ First data validation.
+		const int data_validated = validate_config_line(data, t);
+		// 5/ Read and apply data. Here STAR_RADIUS
+		s->radius = read_int(data);
+		printf("STAR RADIUS [%i]\n", s->radius);
+
+		++(*line_index);
+		free(data);
+	}
+	else
+		return NULL;
+
+	// NB_PLANET -> int
+	if (fgets(line, 64, file) != NULL)
+	{
+		// 0/ Prepare buffer.
+		char config_name[CONFIG_BUFFER_MAX_SIZE];
+		// 1/ Get config name.
+		const int name_length = find_config_line_name(line, config_name);
+		// 2/ Identify the data type we want to load, using config name.
+		const config_type t = find_config_type(config_name);
+		// 3/ Separate the data from the config name.
+		char* data = get_data_from_line(line, name_length);
+		// 4/ First data validation.
+		const int data_validated = validate_config_line(data, t);
+		// 5/ Read and apply data. Here NB_PLANET.
+
+		s->nb_planets = read_int(data);
+
+		// 6/ For each expected planet.
+		for (int i = 0; i < nb_planet; ++i)
+		{
+			if (fgets(line, 64, file) != NULL)
+			{
+				printf("Ignored %s", line);
+
+				// @todo CREATE PLANETS!
+			}
+
+			if (fgets(line, 64, file) != NULL)
+			{
+				printf("Ignored %s", line);
+
+				// @todo CREATE PLANETS!
+			}
+		}
+
+		++line_index;
+		free(data);
+	}
+	else
+		return NULL;
+
+	printf("Created solar system nb %i of radius:%i, at [%i:%i].\n", creation_id, s->radius, s->location.x, s->location.y);
+
+
+	return (app.entities->solar_systems[creation_id++]);
+}
+
+SolarSystem* build_solar_systems(FILE* file, int number_of_systems)
+{
+	char buffer[CONFIG_BUFFER_MAX_SIZE];
+	char buffer2[16];
+
+	app.entities->nb_solar_systems = number_of_systems;
+	app.entities->solar_systems = malloc(sizeof(SolarSystem));
+	SolarSystem* s = calloc(1, sizeof(SolarSystem));
+
+	if (s == NULL)
+		return NULL;
+
+	for (int i = 0; i < number_of_systems; ++i)
+	{
+		if (fgets(buffer, CONFIG_BUFFER_MAX_SIZE, file))
+		{
+			// STAR_POS
+			const int name_length = find_config_line_name(buffer, buffer2);
+			const Vector2i v = read_vector( get_data_from_line(buffer, name_length) );
+			s->location.x = v.x;
+			s->location.y = v.y;
+		}
+
+		if (fgets(buffer, CONFIG_BUFFER_MAX_SIZE, file))
+		{
+			// STAR_RADIUS
+			const int name_length = find_config_line_name(buffer, buffer2);
+			s->radius = read_int(get_data_from_line(buffer, name_length));
+		}
+
+		if (fgets(buffer, CONFIG_BUFFER_MAX_SIZE, file))
+		{
+			// NB_PLANET
+			int nb_planets = 0;
+			build_planets(s, nb_planets);
+		}
+
+		app.entities->solar_systems[i] = s;
+	}
+
+	return NULL;
+}
+
+Planet* build_planets(SolarSystem* s, int number_of_planets)
+{
+	return NULL;
 }
 
 void keep_player_on_screen(void)
@@ -337,8 +481,7 @@ void init_app(const int n_args, char ** argv)
 			entities_ptr->end->y = 0;
 			entities_ptr->end->h = 25;
 			entities_ptr->end->w = 25;
-			entities_ptr->solar_systems = NULL;
-			
+			entities_ptr->solar_systems = NULL;			
 		}
 	}
 
@@ -388,7 +531,7 @@ void init_config(const char* file_name)
 
 	assert(app.config->window_size.x > 0);
 	assert(app.config->window_size.y > 0);
-	// assert(app.config->nb_solar_systems > 0);
+	assert(app.config->nb_solar_systems > 0);
 	assert(app.config->player_size > 0);
 }
 
@@ -401,7 +544,7 @@ void init_render_window(const int width, const int height, const char *name)
 
 	if ( SDL_Init(SDL_INIT_VIDEO) < 0 )
 	{
-		printf(" 1 SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+		fprintf(stderr, " 1 SDL could not initialize! SDL_Error: %s\n", SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
 		abort();
 	}
 	else
@@ -418,21 +561,22 @@ void init_render_window(const int width, const int height, const char *name)
 
 		if (window == NULL)
 		{
-			printf("2 SDL could not initialize! SDL_CreateWindow returned NULL: %s\n", SDL_GetError());
+			fprintf(stderr, "2 SDL could not initialize! SDL_CreateWindow returned NULL: %s\n", SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
 			abort();
 		}
 
 		const SDL_Renderer *renderer = render_window.sdl_renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
 		if (renderer == NULL)
 		{
-			printf("3 SDL could not initialize! SDL_CreateRenderer returned NULL: %s\n", SDL_GetError());
+			fprintf(stderr, "3 SDL could not initialize! SDL_CreateRenderer returned NULL:%s\n", SDL_GetError());  // NOLINT(cert-err33-c) - Error Output 
 			abort();
 		}
 
 		const SDL_Surface *surface = render_window.sdl_surface = SDL_GetWindowSurface(window);
 		if (surface == NULL)
 		{
-			printf("4 SDL could not initialize! SDL_GetWindowSurface returned NULL: %s\n", SDL_GetError());
+			fprintf(stderr, "4 SDL could not initialize! SDL_GetWindowSurface returned NULL: %s\n", SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
+
 			abort();
 		}
 	}

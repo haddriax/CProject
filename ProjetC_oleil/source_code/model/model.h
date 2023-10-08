@@ -12,13 +12,17 @@
 #define CONFIG_NAME_PLAYER_LOCATION "START"
 #define CONFIG_NAME_GOAL_LOCATION "END"
 #define CONFIG_NAME_NUMBER_OF_SYSTEMS "NB_SOLAR_SYSTEM"
+#define CONFIG_NAME_STAR_POS "STAR_POS"
+#define CONFIG_NAME_STAR_RADIUS "STAR_RADIUS"
+#define CONFIG_NAME_NB_PLANET "NB_PLANET"
 #define SEPARATOR_SPACE ' '
+#define SEPARATOR_SUBSTRACT '-'
 
 #define COLOR_PARAMS(x) x.r, x.g, x.b, x.a
 
 #define GRAVITY = 9.81f
 
-#define CONFIG_BUFFER_MAX_SIZE 16
+#define CONFIG_BUFFER_MAX_SIZE 32
 
 #define PLAYER_SIZE 10
 
@@ -90,7 +94,6 @@ Vector2f vectorf_add(const Vector2f* v1, const Vector2f* v2);
  * \return New Vector2f from (v1 + v2)
  */
 Vector2f vectorf_add_cp(const Vector2f v1, const Vector2f v2);
-
 
 /**
 * \brief Return a new Vector from the substraction of the 2 parameters vectors.
@@ -174,6 +177,7 @@ typedef struct Entities
 	Player* player;
 	SDL_Rect* end;
 	SolarSystem** solar_systems;
+	int nb_solar_systems;
 	
 } Entities;
 
@@ -248,6 +252,20 @@ config_type find_config_type(const char* config_name);
 char* get_data_from_line(const char* line, const int data_start);
 
 /**
+ * \brief Ensure the data char* contain only alphanumerical char and no spaces.
+ * \param data data to validate.
+ * \return 1 Success, 0 otherwise.
+ */
+int validate_is_int(const char* data);
+
+/**
+ * \brief Ensure the data char* contain only numerical char and exactly 1 space.
+ * \param data data to validate.
+ * \return 1 Success, 0 otherwise.
+ */
+int validate_is_vector(const char* data);
+
+/**
  * \brief Verify that the data seems to match the expected config_type
  * \param data data to check
  * \param t config_type to expect
@@ -258,10 +276,11 @@ int validate_config_line(const char* data, const config_type t);
 /**
  * \brief Read data and select appropriate function to process it
  * \param data data as char*
- * \param t config_type to select data process
+ * \param type config_type to select data process
+ * \param file File where config are read from. Used multiple line reading.
+ * \param line_index Incremented index when reading line from file in argument.
  */
-void process_data(const char* data, const config_type t);
-
+void process_data(const char* data, const config_type type, FILE* file, int* line_index);
 
 /**
  * \brief Read a Vector2i from a char*. X and Y values must be separated by a space.
@@ -287,6 +306,26 @@ int read_int(const char* data);
 #pragma endregion
 
 #pragma region Initializer
+
+/**
+ * \brief Alloc and generate a solar system, expect file current line to be STAR_POS.
+ * ` Auto insert newly created SolarSystem into entities list.
+ * \param file config file
+ * \param line_index update line index
+ * \param spawn_location
+ * \return Pointer to newly created SolarSystem
+ */
+SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location);
+
+/**
+ * \brief From a file and the number of solar system, create them all. Call after reading the NB_SOLAR_SYSTEM config
+ * \param file Config file stream
+ * \param number_of_systems Line from File containing the number of expected system. 
+ * \return Pointer to the beginning of the SolarSystem list.
+ */
+SolarSystem* build_solar_systems(FILE* file, int number_of_systems);
+
+Planet* build_planets(SolarSystem* s, int number_of_planets);
 
 /**
  * \brief Initialize application, reading config file 

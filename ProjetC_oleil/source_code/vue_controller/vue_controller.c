@@ -197,6 +197,21 @@ int render_fill_circle(SDL_Renderer* renderer, int x, int y, int radius)
 	return status;
 }
 
+void render_systems(void)
+{
+	int i = app.entities->nb_solar_systems;
+	while (i-->0)
+	{
+		assert(app.entities->solar_systems[i] != NULL);
+		SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(yellow));
+		render_fill_circle(
+			render_window.sdl_renderer,
+			app.entities->solar_systems[i]->location.x,
+			app.entities->solar_systems[i]->location.y,
+			app.entities->solar_systems[i]->radius);
+	}
+}
+
 void render_planets(void)
 {
 
@@ -207,7 +222,7 @@ void render_player(void)
 	SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
 	if ( SDL_RenderFillRectF(render_window.sdl_renderer, &app.entities->player->draw_rect) == -1)
 	{
-		printf("SDL could not render Player. %s\n", SDL_GetError());
+		fprintf(stderr, "%s: %s\n", "SDL could not render Player.", SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
 	}
 }
 
@@ -220,20 +235,19 @@ void render(void)
 
 			SDL_UpdateWindowSurface(render_window.sdl_win);
 
+			render_systems();
+
 			render_planets();
 
 			render_player();
 
 			SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
-			SDL_RenderFillRect(render_window.sdl_renderer, app.entities->end); // Render Goal. @todo add offset to center it's coord.
-
-			SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(yellow));
-			render_fill_circle(render_window.sdl_renderer, 100, 100, 25);
+			SDL_RenderFillRect(render_window.sdl_renderer, app.entities->end); // Render Goal. @todo add offset to center it's coord
 			
 			SDL_RenderPresent(render_window.sdl_renderer);
 		}
 		else
 		{
-			printf("Error in rendering, pointer to SDL_Renderer is NULL.");
+			fprintf(stderr, "%s\n", "Error in rendering, pointer to SDL_Renderer is NULL.");  // NOLINT(cert-err33-c) - Error Output
 		}
 }

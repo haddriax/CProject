@@ -92,6 +92,8 @@ int draw_circle(SDL_Renderer* renderer, int32_t centre_x, int32_t centre_y, int3
 int render_fill_circle(SDL_Renderer* renderer, int x, int y, int radius);
 #pragma endregion
 
+void render_systems(void);
+
 void render_planets(void);
 
 /**
