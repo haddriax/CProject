@@ -4,6 +4,7 @@
 #include <SDL.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #define CONFIG_DEFAULT_NAME "config.txt"
 #define APP_DEFAULT_NAME "Projet C"

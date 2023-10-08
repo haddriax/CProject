@@ -21,13 +21,14 @@ Config load_config(const char *file_name)
 	assert(file_name);
 	if (file_name != NULL)
 	{
-		int line_index = 0;
-		// Open file.
+        int line_index = 0;
+
+        // Try to open file.
 		FILE* file = NULL;
 		const errno_t e = fopen_s(&file, file_name, FILE_MODE_READONLY);
-		if ( e ) // ERROR HANDLING - OPENING FAILED.
+		if ( e || (!file) ) // ERROR HANDLING - OPENING FAILED.
 		{		
-			fprintf(stderr, "%s\n", "Error when opening config file.");  // NOLINT(cert-err33-c) - Error Output
+			fprintf(stderr, "Error when opening config file [%s]: %s\n", file_name, strerror(e));  // NOLINT(cert-err33-c) - Error Output
 			abort();
 		}
 
@@ -69,7 +70,7 @@ Config load_config(const char *file_name)
 				free(data);
 			}
 			const int closed = fclose(file);
-			if (!closed)
+			if (closed != 0)
 				fprintf(stderr, "%s\n", "Error closing config files.");  // NOLINT(cert-err33-c) - Error Output
 
 			// Setup end location. From config to actual game data.
@@ -84,8 +85,11 @@ Config load_config(const char *file_name)
 int find_config_line_name(const char* line, char* out_config_name)
 {
 	int char_index = 0;
+    // Until we found the separator ...
 	while ( (line[char_index] != SEPARATOR_SPACE) && (char_index < CONFIG_BUFFER_MAX_SIZE) )
 		++char_index;
+
+    // Once done, copy the data from beginning to separator into the argument char*
 	SDL_strlcpy(out_config_name, line, ++char_index);
 
 	return char_index;
@@ -109,7 +113,7 @@ config_type find_config_type(const char* config_name)
 		return nb_planet;
 	else
 	{
-		printf("%s%s\n", config_name, ": Config not handled yet."); // Indication Output
+        fprintf(stderr, "%s%s\n", config_name, ": Config not handled.");  // NOLINT(cert-err33-c) - Error Output
 	}
 	return none;
 }
@@ -210,7 +214,6 @@ void process_data(const char* data, const config_type type, FILE* file, int* lin
 		printf("Number of systems set to %i\n", app.config->nb_solar_systems);
 		break;
 	case star_pos:
-		for (int i = 0; i < app.config->nb_solar_systems; ++i)
 			build_system(file, line_index, read_vector(data));
 		break;
 	case star_radius:
@@ -318,7 +321,7 @@ SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location)
 	{
 		s->location.x = spawn_location.x;
 		s->location.y = spawn_location.y;
-		printf("STAR POS [%i:%i]\n", s->location.x, s->location.y);
+		// printf("STAR POS [%i:%i]\n", s->location.x, s->location.y);
 	}	
 
 	// STAR RADIUS -> int
@@ -336,7 +339,7 @@ SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location)
 		const int data_validated = validate_config_line(data, t);
 		// 5/ Read and apply data. Here STAR_RADIUS
 		s->radius = read_int(data);
-		printf("STAR RADIUS [%i]\n", s->radius);
+		// printf("STAR RADIUS [%i]\n", s->radius);
 
 		++(*line_index);
 		free(data);
@@ -360,34 +363,32 @@ SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location)
 		// 5/ Read and apply data. Here NB_PLANET.
 
 		s->nb_planets = read_int(data);
+        // printf("NB PLANETS [%i]\n", s->nb_planets );
 
 		// 6/ For each expected planet.
-		for (int i = 0; i < nb_planet; ++i)
+		for (int i = 0; i < s->nb_planets; ++i)
 		{
 			if (fgets(line, 64, file) != NULL)
 			{
-				printf("Ignored %s", line);
+				// printf("Ignored %s\n", line);
 
 				// @todo CREATE PLANETS!
 			}
 
 			if (fgets(line, 64, file) != NULL)
 			{
-				printf("Ignored %s", line);
+				// printf("Ignored %s\n", line);
 
 				// @todo CREATE PLANETS!
 			}
 		}
 
-		++line_index;
 		free(data);
 	}
 	else
 		return NULL;
 
 	printf("Created solar system nb %i of radius:%i, at [%i:%i].\n", creation_id, s->radius, s->location.x, s->location.y);
-
-
 	return (app.entities->solar_systems[creation_id++]);
 }
 
@@ -524,7 +525,7 @@ void init_config(const char* file_name)
 {
 	if (file_name == NULL)
 	{
-		printf("config_file_name in init_app was NULL");
+        fprintf(stderr, "config_file_name in init_app was NULL");  // NOLINT(cert-err33-c) - Error Output
 		abort();
 	}
 	load_config(file_name);
