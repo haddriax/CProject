@@ -155,7 +155,7 @@ int validate_is_int(const char* data)
 
 int validate_is_signed_int(const char *data)
 {
-    size_t i = 0;
+    size_t i;
     // Check if first char is the sign
     if (data[0] == '-')
         i = 1;
@@ -205,10 +205,10 @@ int validate_config_line(const char* data, const config_type t)
         case planet_orbit:
             return validate_is_signed_int(data);
 		case none:
-		default:
-			fprintf(stderr,"Can't validate: [%s].\n", data);
+			fprintf(stderr,"Can't validate: [%s].\n", data);  // NOLINT(cert-err33-c)
 			return 0;
 	}
+	return 0;
 }
 
 void process_data(const char* data, const config_type type, FILE* file, int* line_index)
@@ -219,37 +219,42 @@ void process_data(const char* data, const config_type type, FILE* file, int* lin
 	{
 	case window_size:
 		app.config->window_size = read_vector(data);
+#if PRINT_CONFIG_CREATION
 		printf("Window size set to %i:%i\n", app.config->window_size.x, app.config->window_size.y);
+#endif
+
 		break;
 	case player_location:
 		app.config->player_start = read_float_point(data);
+#if PRINT_CONFIG_CREATION
 		printf("Player start set to %f:%f\n", app.config->player_start.x, app.config->player_start.y);
+#endif
+
 		break;
 	case goal_location:
 		app.config->goal_end = read_float_point(data);
+#if PRINT_CONFIG_CREATION
 		printf("Goal set to %f:%f\n", app.config->goal_end.x, app.config->goal_end.y);
+#endif
 		break;
 	case nb_solar_system:
 		app.config->nb_solar_systems = read_int(data);
 		app.entities->nb_solar_systems = app.config->nb_solar_systems;
 		app.entities->solar_systems = malloc(app.config->nb_solar_systems * sizeof(SolarSystem));
 		assert(app.entities->solar_systems != NULL);
+#if PRINT_CONFIG_CREATION
 		printf("Number of systems set to %i\n", app.config->nb_solar_systems);
+#endif
 		break;
 	case star_pos:
 			build_system(file, line_index, read_vector(data));
 		break;
 	case star_radius:
-		break;
 	case nb_planet:
-		break;
 	case planet_radius:
-		break;
 	case planet_orbit:
-		break;
 	case none:
 		break;
-	default: ;
 	}
 }
 
@@ -322,11 +327,8 @@ int read_int(const char* data)
 	{
 		if ( !SDL_isalnum((int)data[i]) )
 		{
-			if ( data[i] != SEPARATOR_SUBSTRACT )
-			{
-				fprintf(stderr, "Could not read [%s] from config, expected an Int.", data);  // NOLINT(cert-err33-c) - Error Output
-				abort();
-			}
+			fprintf(stderr, "Could not read [%s] from config, expected an Int.", data);  // NOLINT(cert-err33-c) - Error Output
+			abort();
 		}
 	}
 
@@ -401,7 +403,7 @@ SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location)
 		// 1/ Get config name.
 		const int name_length = find_config_line_name(line, config_name);
 		// 2/ Identify the data type we want to load, using config name.
-		const config_type t = find_config_type(config_name);
+		config_type t = find_config_type(config_name);
 		// 3/ Separate the data from the config name.
 		char* data = get_data_from_line(line, name_length);
 		// 4/ First data validation.
@@ -415,44 +417,59 @@ SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location)
         s->planets = calloc(s->nb_planets, sizeof(Planet));
 		for (int i = 0; i < s->nb_planets; ++i)
 		{
-            int orbit, radius;
+            int orbit = 0, radius = 0;
             if (fgets(line, 64, file) != NULL)
             {
-                // 1/ Get config name.
-                const int name_length = find_config_line_name(line, config_name);
-                const config_type t = find_config_type(config_name);
-                char* data = get_data_from_line(line, name_length);
-                const int data_validated = validate_config_line(data, t);
-                orbit = read_signed_int(data);
+                const int p_name_length = find_config_line_name(line, config_name);
+                t = find_config_type(config_name);
+                char* p_data = get_data_from_line(line, p_name_length);
+                validate_config_line(p_data, t);
+                radius = read_int(p_data);
+				free(p_data);
             }
             if (fgets(line, 64, file) != NULL)
             {
-                // 1/ Get config name.
-                const int name_length = find_config_line_name(line, config_name);
-                const config_type t = find_config_type(config_name);
-                char* data = get_data_from_line(line, name_length);
-                const int data_validated = validate_config_line(data, t);
-                radius = read_int(data);
+                const int p_name_length = find_config_line_name(line, config_name);
+                t = find_config_type(config_name);
+                char* p_data = get_data_from_line(line, p_name_length);
+                validate_config_line(p_data, t);
+                orbit = read_signed_int(p_data);
+				free(p_data);
             }
             // Use read data to create planet.
-            build_planets(s, orbit, radius, i);
+            build_planet(s, orbit, radius, i);
 		}
 
 		free(data);
 	}
 	else
 		return NULL;
-
+#if PRINT_CONFIG_CREATION
 	printf("Created solar system nb %i of radius:%i, at [%i:%i].\n", creation_id, s->radius, s->location.x, s->location.y);
+#endif
+
 	return (app.entities->solar_systems[creation_id++]);
 }
 
-Planet *build_planets(SolarSystem *parent_system, int orbit, int radius, int index)
+Planet *build_planet(SolarSystem *parent_system, const int orbit, const int radius, const int index)
 {
-    parent_system->planets[index].radius = radius;
-    parent_system->planets[index].orbit = orbit;
-    parent_system->planets[index].parent_system = parent_system;
-	return &parent_system->planets[index];
+	assert(parent_system);
+	Planet* p = &(parent_system->planets[index]);
+	if (p)
+	{
+		p->radius = radius;
+		p->orbit = orbit;
+		p->location.x = (int)parent_system->location.x;
+		p->location.y = (int)parent_system->location.y;
+		p->parent_system = parent_system;
+#if PRINT_CONFIG_CREATION
+		printf("   Built new planet\n");
+		printf("	Create planet: radius[%i]|orbit[%i].\n", radius, orbit);
+#endif
+		return &(parent_system->planets[index]);
+	}
+	fprintf(stderr, "Error creating planet, memory was not allocated.\n");  // NOLINT(cert-err33-c)
+	return NULL;
 }
 
 void keep_player_on_screen(void)
@@ -477,12 +494,11 @@ void keep_player_on_screen(void)
 		p->location.y = 0;
 }
 
-
 void init_app(const int n_args, char ** argv)
 {
 	if (n_args < 1)
 	{
-		printf("No config file argument detected.");
+		fprintf(stderr,"No config file argument detected.");  // NOLINT(cert-err33-c)
 		abort();
 	}
 
@@ -532,6 +548,10 @@ void init_app(const int n_args, char ** argv)
 		app.config->window_size.y,
 		APP_DEFAULT_NAME
 	);
+
+	assert(app.config != NULL);
+	assert(app.entities != NULL);
+	assert(app.entities->player != NULL);
 
 	player_update(); // update player location for the first render frame.
 }

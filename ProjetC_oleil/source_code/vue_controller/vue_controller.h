@@ -94,8 +94,6 @@ int render_fill_circle(SDL_Renderer* renderer, int x, int y, int radius);
 
 void render_systems(void);
 
-void render_planets(void);
-
 /**
  * \brief Render player as a filled red rectangle using Its SDL_FRect.
  */

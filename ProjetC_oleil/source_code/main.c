@@ -1,12 +1,22 @@
 #include "vue_controller/vue_controller.h"
 
+void quit_app(void)
+{
+    SDL_DestroyWindow(render_window.sdl_win);
+    SDL_DestroyRenderer(render_window.sdl_renderer);
+    SDL_Quit();
+
+
+    if (app.entities->end) free(app.entities->end);
+    if (app.entities->player) free(app.entities->player);
+    if (app.entities->solar_systems) free(app.entities->solar_systems);
+    if (app.entities) free(app.entities);
+}
+
 int main (int argc, char** argv)
 {
     // Remember : await config.txt path to be first user passed argument.
     init_app(argc, argv);
-    assert(app.config != NULL);
-    assert(app.entities != NULL);
-    assert(app.entities->player != NULL);
 
     Clock clock;
     clock.last_time = SDL_GetTicks64();
@@ -37,14 +47,7 @@ int main (int argc, char** argv)
         }
     }
 
-    // Cleanly quit SDL.
-    SDL_DestroyWindow(render_window.sdl_win);
-    SDL_DestroyRenderer(render_window.sdl_renderer);
-    SDL_Quit();
-
-
-    free(app.entities->end);
-    free(app.entities->player);
+    quit_app();
 
     return 0;
 }

@@ -202,19 +202,28 @@ void render_systems(void)
 	int i = app.entities->nb_solar_systems;
 	while (i-->0)
 	{
-		assert(app.entities->solar_systems[i] != NULL);
+		const SolarSystem* s = (app.entities->solar_systems[i]);
+		assert(s != NULL);
 		SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(yellow));
 		render_fill_circle(
 			render_window.sdl_renderer,
-			app.entities->solar_systems[i]->location.x,
-			app.entities->solar_systems[i]->location.y,
-			app.entities->solar_systems[i]->radius);
+			s->location.x,
+			s->location.y,
+			s->radius);
+
+		SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
+		for (int j = 0; j < s->nb_planets; ++j)
+		{
+			const Planet* p = &(s->planets[j]);
+			assert(p != NULL);
+
+			render_fill_circle(
+				render_window.sdl_renderer,
+				(int)p->location.x + p->orbit,
+				(int)p->location.y + p->orbit,
+				p->radius);
+		}
 	}
-}
-
-void render_planets(void)
-{
-
 }
 
 void render_player(void)
@@ -232,12 +241,9 @@ void render(void)
 		{
 			SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(black));
 			SDL_RenderClear(render_window.sdl_renderer);
-
 			SDL_UpdateWindowSurface(render_window.sdl_win);
 
 			render_systems();
-
-			render_planets();
 
 			render_player();
 

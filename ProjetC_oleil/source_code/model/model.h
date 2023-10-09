@@ -1,3 +1,4 @@
+// ReSharper disable CppClangTidyModernizeMacroToEnum
 #ifndef PROJECTC_OLEIL_MODEL_H
 #define PROJECTC_OLEIL_MODEL_H
 
@@ -5,6 +6,8 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+
+#define PRINT_CONFIG_CREATION 0
 
 #define CONFIG_DEFAULT_NAME "config.txt"
 #define APP_DEFAULT_NAME "Projet C"
@@ -21,7 +24,7 @@
 #define SEPARATOR_SPACE ' '
 #define SEPARATOR_SUBSTRACT '-'
 
-#define COLOR_PARAMS(x) x.r, x.g, x.b, x.a
+#define COLOR_PARAMS(x) (x).r, (x).g, (x).b, (x).a
 
 #define GRAVITY = 9.81f
 
@@ -334,7 +337,7 @@ int read_signed_int(const char* data);
  */
 SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location);
 
-Planet *build_planets(SolarSystem *parent_system, int orbit, int radius, int index);
+Planet *build_planet(SolarSystem *parent_system, int orbit, int radius, int index);
 
 /**
  * \brief Initialize application, reading config file 
