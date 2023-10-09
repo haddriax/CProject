@@ -384,7 +384,7 @@ SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location)
 		// 3/ Separate the data from the config name.
 		char* data = get_data_from_line(line, name_length);
 		// 4/ First data validation.
-		const int data_validated = validate_config_line(data, t);
+		validate_config_line(data, t);
 		// 5/ Read and apply data. Here STAR_RADIUS
 		s->radius = read_int(data);
 		// printf("STAR RADIUS [%i]\n", s->radius);
@@ -407,7 +407,7 @@ SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location)
 		// 3/ Separate the data from the config name.
 		char* data = get_data_from_line(line, name_length);
 		// 4/ First data validation.
-		const int data_validated = validate_config_line(data, t);
+		validate_config_line(data, t);
 
 		// 5/ Read and apply data. Here NB_PLANET.
 		s->nb_planets = read_int(data);
