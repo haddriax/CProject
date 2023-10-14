@@ -217,17 +217,19 @@ void render_systems(void)
 			const Planet* p = &(s->planets[j]);
 			assert(p != NULL);
 
+            // Draw orbit path
 			SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(grey));
 			draw_circle(render_window.sdl_renderer,
 				s->location.x,
 				s->location.y,
-				p->orbit);
+                (p->orbit < 0 ? (-p->orbit) : p->orbit));
 
+            // Draw Planet
 			SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
 			render_fill_circle(
 				render_window.sdl_renderer,
-				(int)p->location.x + p->orbit,
-				(int)p->location.y + p->orbit,
+				(int)p->location.x,
+				(int)p->location.y,
 				p->radius);
 		}
 	}

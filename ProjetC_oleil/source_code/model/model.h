@@ -6,8 +6,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <math.h>
 
-#define PRINT_CONFIG_CREATION 1
+#define PRINT_CONFIG_CREATION 0
 
 #define CONFIG_DEFAULT_NAME "config.txt"
 #define APP_DEFAULT_NAME "Projet C"

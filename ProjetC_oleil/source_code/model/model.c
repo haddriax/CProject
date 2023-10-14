@@ -107,15 +107,15 @@ config_type find_config_type(const char* config_name)
         return star_radius;
     else if (SDL_strcmp(config_name, CONFIG_NAME_NB_PLANET) == 0)
         return nb_planet;
-	else if (SDL_strcmp(config_name, CONFIG_NAME_WINDOW_SIZE) == 0)
+    else if (SDL_strcmp(config_name, CONFIG_NAME_WINDOW_SIZE) == 0)
 		return window_size;
-	else if (SDL_strcmp(config_name, CONFIG_NAME_PLAYER_LOCATION) == 0)
+    else if (SDL_strcmp(config_name, CONFIG_NAME_PLAYER_LOCATION) == 0)
 		return player_location;
     else if (SDL_strcmp(config_name, CONFIG_NAME_GOAL_LOCATION) == 0)
 		return goal_location;
     else if (SDL_strcmp(config_name, CONFIG_NAME_NUMBER_OF_SYSTEMS) == 0)
 		return nb_solar_system;
-	else
+    else
 	{
         fprintf(stderr, "%s%s\n", config_name, ": Config not handled.");  // NOLINT(cert-err33-c) - Error Output
         return none;
@@ -160,7 +160,7 @@ int validate_is_signed_int(const char *data)
     if (data[0] == '-')
         i = 1;
 
-    for (i = 1; i < SDL_strlen(data); ++i)
+    for (; i < SDL_strlen(data); ++i)
     {
         if (SDL_isspace(data[i])) // Want no space
             return 0;
@@ -342,7 +342,7 @@ int read_signed_int(const char *data)
     int i = 0;
     if (data[0] == SEPARATOR_SUBSTRACT)
         i = 1;
-    for (; i < (data_length-1); ++i)
+    for (; i < (data_length); ++i)
     {
         if ( !SDL_isalnum((int)data[i]) )
         {
@@ -388,7 +388,6 @@ SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location)
 		validate_config_line(data, t);
 		// 5/ Read and apply data. Here STAR_RADIUS
 		s->radius = read_int(data);
-		// printf("STAR RADIUS [%i]\n", s->radius);
 
 		++(*line_index);
 		free(data);
@@ -412,7 +411,6 @@ SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location)
 
 		// 5/ Read and apply data. Here NB_PLANET.
 		s->nb_planets = read_int(data);
-        // printf("NB PLANETS [%i]\n", s->nb_planets );
 
 		// 6/ For each expected planet.
         s->planets = calloc(s->nb_planets, sizeof(Planet));
@@ -460,11 +458,10 @@ Planet *build_planet(SolarSystem *parent_system, const int orbit, const int radi
 	{
 		p->radius = radius;
 		p->orbit = orbit;
-		p->location.x = (int)parent_system->location.x;
-		p->location.y = (int)parent_system->location.y;
+		p->location.x = (float)parent_system->location.x + (float)orbit * cosf(0);
+		p->location.y = (float)parent_system->location.y + (float)orbit * sinf(0);
 		p->parent_system = parent_system;
 #if PRINT_CONFIG_CREATION
-		printf("   Built new planet\n");
 		printf("	Create planet: radius[%i]|orbit[%i].\n", radius, orbit);
 #endif
 		return &(parent_system->planets[index]);
