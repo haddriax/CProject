@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <string.h>
 
-#define PRINT_CONFIG_CREATION 0
+#define PRINT_CONFIG_CREATION 1
 
 #define CONFIG_DEFAULT_NAME "config.txt"
 #define APP_DEFAULT_NAME "Projet C"
@@ -132,6 +132,8 @@ float vector_length_squared(const Vector2i* v);
 
 #pragma endregion
 
+#pragma region Typedef
+
 typedef struct Clock
 {
 	Uint64 last_time; 
@@ -217,6 +219,15 @@ typedef struct App
 } App;
 // Global variable, container for App wide data.
 extern App app;
+#pragma endregion
+
+#pragma region Collisions
+int is_colliding_circle(const Player* player, const SDL_FPoint location, int radius);
+// int is_colliding_planet(const Player* player, const Planet* planet);
+// int is_colliding_star(const Player* player, const Planet* planet);
+// int is_colliding_end(const Player* player, const End* end);
+// int is_any_collision(const Player* player);
+#pragma endregion
 
 #pragma region File_Reading
 
@@ -358,6 +369,8 @@ void init_render_window(int width, int height, const char *name);
 
 /** @brief Loop the player through the window border, so it stays in the window. */
 void keep_player_on_screen(void);
+
+void update_planet_location(float time, Planet* p);
 
 /**
  * \brief Read the Player coordinates and update Its rectangle coordinates (add offset to center location with rect).

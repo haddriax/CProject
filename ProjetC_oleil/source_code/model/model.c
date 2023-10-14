@@ -281,7 +281,6 @@ Vector2i read_vector(const char* data)
 		y[j] = data[(char_index + 1) + j];
 	y[j + 1] = '\0';
 
-	// Convert to numeric value (long) and cast to int.
 	const int x_coords = SDL_atoi(x);
 	const int y_coords = SDL_atoi(y);
 
@@ -341,7 +340,7 @@ int read_signed_int(const char *data)
     assert(data_length > 0);
 
     int i = 0;
-    if (data[0] == '-')
+    if (data[0] == SEPARATOR_SUBSTRACT)
         i = 1;
     for (; i < (data_length-1); ++i)
     {
@@ -354,8 +353,10 @@ int read_signed_int(const char *data)
             }
         }
     }
+
+	const int return_value = (data[0] == SEPARATOR_SUBSTRACT ? (SDL_atoi(&data[1]) * -1) : (SDL_atoi(&data[0])));
     // Multiply by -1 or 1, depending on first char.
-    return (SDL_atoi(data) * (data[0] == '-' ? -1 : 1));
+    return return_value;
 }
 
 SolarSystem* build_system(FILE* file, int* line_index, Vector2i spawn_location)
@@ -492,6 +493,12 @@ void keep_player_on_screen(void)
 	// Down (y) boundary.
 	if (p->location.y + (float)player_width > (float)app.config->window_size.y)
 		p->location.y = 0;
+}
+
+void update_planet_location(float time, Planet* p)
+{
+	assert(p);
+
 }
 
 void init_app(const int n_args, char ** argv)
@@ -699,7 +706,6 @@ struct Vector2f somme_forces()
 
 }
 
-
 void game_loop(void)
 {
 	physic_update();
@@ -707,12 +713,12 @@ void game_loop(void)
 
 void physic_update(void)
 {
-	// keep_player_on_screen();
 	if (app.simulation_started)
 	{
 		app.entities->player->velocity.x = 1.7f;
 		app.entities->player->velocity.y = 1.00f;
 		apply_player_velocity();
+		// keep_player_on_screen();
 		player_update();
 	}
 }

@@ -6,6 +6,7 @@ const struct SDL_Color green = { 0x00, 0xFF, 0x00, SDL_ALPHA_OPAQUE };
 const struct SDL_Color blue = { 0x00, 0x00, 0xFF, SDL_ALPHA_OPAQUE };
 const struct SDL_Color black = { 0x00, 0x00, 0x00, SDL_ALPHA_OPAQUE };
 const struct SDL_Color white = { 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE };
+const struct SDL_Color grey = { 0x40, 0x40, 0x40, SDL_ALPHA_OPAQUE };
 const struct SDL_Color yellow = { 0xFA, 0xFA, 0x37, SDL_ALPHA_OPAQUE };
 
 int handle_inputs(void)
@@ -55,8 +56,6 @@ void keyboard_key_down(const SDL_KeyboardEvent* key_event)
 			break;
 	case SDLK_SPACE:
 		app.simulation_started = 1; // On SPACE pressed, start the simulation.
-		default:
-			break;
 	}
 }
 
@@ -202,6 +201,7 @@ void render_systems(void)
 	int i = app.entities->nb_solar_systems;
 	while (i-->0)
 	{
+		// Render Star
 		const SolarSystem* s = (app.entities->solar_systems[i]);
 		assert(s != NULL);
 		SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(yellow));
@@ -211,12 +211,19 @@ void render_systems(void)
 			s->location.y,
 			s->radius);
 
-		SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
+		// Render Planets & orbits
 		for (int j = 0; j < s->nb_planets; ++j)
 		{
 			const Planet* p = &(s->planets[j]);
 			assert(p != NULL);
 
+			SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(grey));
+			draw_circle(render_window.sdl_renderer,
+				s->location.x,
+				s->location.y,
+				p->orbit);
+
+			SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
 			render_fill_circle(
 				render_window.sdl_renderer,
 				(int)p->location.x + p->orbit,

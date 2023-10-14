@@ -8,6 +8,7 @@ extern const struct SDL_Color red;
 extern const struct SDL_Color green;
 extern const struct SDL_Color blue;
 extern const struct SDL_Color white;
+extern const struct SDL_Color grey;
 extern const struct SDL_Color black;
 
 typedef struct KeyFlags
