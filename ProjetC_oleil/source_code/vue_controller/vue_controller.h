@@ -42,16 +42,6 @@ void update_window_name(const int framerate);
 #pragma region Drawing_fuction
 
 /**
- * \brief Draw a rectangle from integer coordinates, width and height.
- * \param coord_x x coordinate of the top left corner.
- * \param coord_y y coordinate of the top left corner.
- * \param width Width of the rectangle
- * \param height Height of the rectangle
- * \param color Filling color
- */
-void draw_rectangle(int coord_x, int coord_y, int width, int height, const SDL_Color *color);
-
-/**
  * \brief Imported code - Replacement for glx
  * \param renderer 
  * \param centre_x 

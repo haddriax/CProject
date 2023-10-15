@@ -80,12 +80,6 @@ void update_window_name(const int framerate) {
         SDL_SetWindowTitle(render_window.sdl_win, win_name_buffer);
 }
 
-void draw_rectangle(int coord_x, int coord_y, int width, int height, const SDL_Color *color) {
-    const SDL_Rect fill_rect = {coord_x, coord_y, width, height};
-    SDL_SetRenderDrawColor(render_window.sdl_renderer, color->r, color->g, color->b, color->a);
-    SDL_RenderFillRect(render_window.sdl_renderer, &fill_rect);
-}
-
 int draw_circle(SDL_Renderer *renderer, const int32_t centre_x, const int32_t centre_y, const int32_t radius) {
     const int32_t diameter = (radius * 2);
 
