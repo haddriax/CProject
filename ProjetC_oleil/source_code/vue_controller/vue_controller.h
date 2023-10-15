@@ -52,34 +52,6 @@ void update_window_name(const int framerate);
 void draw_rectangle(int coord_x, int coord_y, int width, int height, const SDL_Color *color);
 
 /**
- * \brief Draw a line from 4 integer coordinates
- * \param x_begin x coordinate of begin point
- * \param y_begin y coordinate of begin point
- * \param x_end x coordinate of end point
- * \param y_end y coordinate of end point
- * \param color Line color
- * \return O on success, or a negative code on failure.
- */
-int draw_line(int x_begin, int y_begin, int x_end, int y_end, const SDL_Color *color);
-
-/**
- * \brief Draw a line from 2 Vector2i
- * \param begin Coordinates of Begin point
- * \param end Coordinates of End point
- * \param color Line color
- * \return O on success, or a negative code on failure.
- */
-int draw_line_p(const SDL_FPoint *begin, const SDL_FPoint *end, const SDL_Color *color);
-
-/**
- * \brief Draw a red line from vector parameters
- * \param begin Begin point
- * \param end End point
- * \return O on success, or a negative code on failure.
- */
-int draw_line_debug(const Vector2i *begin, const Vector2i *end);
-
-/**
  * \brief Imported code - Replacement for glx
  * \param renderer 
  * \param centre_x 

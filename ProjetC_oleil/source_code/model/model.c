@@ -458,10 +458,6 @@ void keep_player_on_screen(void) {
         p->location.y = 10;
 }
 
-void update_planet_location(float time, Planet *p) {
-    assert(p);
-}
-
 void init_app(const int n_args, char **argv) {
     if (n_args < 1) {
         fprintf(stderr, "No config file argument detected.");  // NOLINT(cert-err33-c)
@@ -602,8 +598,8 @@ void player_update(void) {
 }
 
 void apply_player_velocity(void) {
-    app.entities->player->location.x += app.entities->player->velocity.x;
-    app.entities->player->location.y += app.entities->player->velocity.y;
+    // @todo: Normalized direction * speed for proper movement.
+    apply_velocity_to_fpoint( &app.entities->player->location, &app.entities->player->velocity);
 }
 
 void planet_revolution_update(void) {
@@ -627,6 +623,10 @@ void planet_revolution_update(void) {
     }
 }
 
+void apply_velocity_to_fpoint(SDL_FPoint* target_point, const Vector2f* v) {
+    target_point->x += v->x;
+    target_point->y += v->y;
+}
 
 Vector2f vector_divi(const Vector2f *v, float divisor) {
     assert(divisor > 0);

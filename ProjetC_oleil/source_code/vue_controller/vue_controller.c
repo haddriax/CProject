@@ -86,21 +86,6 @@ void draw_rectangle(int coord_x, int coord_y, int width, int height, const SDL_C
     SDL_RenderFillRect(render_window.sdl_renderer, &fill_rect);
 }
 
-int draw_line(int x_begin, int y_begin, int x_end, int y_end, const SDL_Color *color) {
-    SDL_SetRenderDrawColor(render_window.sdl_renderer, color->r, color->g, color->b, color->a);
-    return SDL_RenderDrawLine(render_window.sdl_renderer, x_begin, y_begin, x_end, y_end);
-}
-
-int draw_line_p(const SDL_FPoint *begin, const SDL_FPoint *end, const SDL_Color *color) {
-    SDL_SetRenderDrawColor(render_window.sdl_renderer, color->r, color->g, color->b, color->a);
-    return SDL_RenderDrawLineF(render_window.sdl_renderer, begin->x, begin->y, end->x, end->y);
-}
-
-int draw_line_debug(const Vector2i *begin, const Vector2i *end) {
-    SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
-    return SDL_RenderDrawLine(render_window.sdl_renderer, begin->x, begin->y, end->x, end->y);
-}
-
 int draw_circle(SDL_Renderer *renderer, const int32_t centre_x, const int32_t centre_y, const int32_t radius) {
     const int32_t diameter = (radius * 2);
 
@@ -136,7 +121,6 @@ int draw_circle(SDL_Renderer *renderer, const int32_t centre_x, const int32_t ce
 
     return 1;
 }
-
 
 int render_fill_circle(SDL_Renderer *renderer, int x, int y, int radius) {
     int offsetx, offsety, d;
@@ -216,11 +200,25 @@ void render_systems(void) {
 }
 
 void render_player(void) {
+    Player* p = app.entities->player;
     SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
-    if (SDL_RenderFillRectF(render_window.sdl_renderer, &app.entities->player->draw_rect) == -1) {
+    if (SDL_RenderFillRectF(render_window.sdl_renderer, &(p->draw_rect)) == -1) {
         fprintf(stderr, "%s: %s\n", "SDL could not render Player.",
                 SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
     }
+
+    // Only if vector length is slightly bigger than zero.
+    if (fabsf(p->velocity.x + p->velocity.y) >= 0.05f)
+    {
+        // Render velocity vector.
+        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(green));
+        SDL_RenderDrawLineF(render_window.sdl_renderer,
+                            p->location.x,
+                            p->location.y,
+                            (p->location.x + p->velocity.x * 25)  ,
+                            (p->location.y + p->velocity.y * 25) );
+    }
+
 }
 
 void render(void) {
@@ -234,7 +232,7 @@ void render(void) {
         // Border w and h is -20, because it cumulates both the margin and the offset.
         SDL_Rect border = {10, 10, app.config->window_size.x - 20, app.config->window_size.y - 20};
         SDL_RenderDrawRect(render_window.sdl_renderer,
-                           &border); // Render Goal. @todo add offset to center it's coord
+                           &border); // Render Goal.
 
         render_systems();
 

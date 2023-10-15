@@ -367,8 +367,6 @@ void init_render_window(int width, int height, const char *name);
 /** @brief Loop the player through the window border, so it stays in the window. */
 void keep_player_on_screen(void);
 
-void update_planet_location(float time, Planet *p);
-
 /**
  * \brief Read the Player coordinates and update Its rectangle coordinates (add offset to center location with rect).
  */
@@ -377,6 +375,8 @@ void player_update(void);
 void apply_player_velocity(void);
 
 void planet_revolution_update(void);
+
+void apply_velocity_to_fpoint(SDL_FPoint* target_point, const Vector2f* v);
 
 /**
  * \brief Compute physic (forces and movement) and apply new position to entities.
