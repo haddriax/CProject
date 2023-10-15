@@ -1,53 +1,61 @@
 #include "vue_controller/vue_controller.h"
 
-void quit_app(void)
+int quit_app(void)
 {
     SDL_DestroyWindow(render_window.sdl_win);
     SDL_DestroyRenderer(render_window.sdl_renderer);
     SDL_Quit();
 
-
     if (app.entities->end) free(app.entities->end);
     if (app.entities->player) free(app.entities->player);
     if (app.entities->solar_systems) free(app.entities->solar_systems);
     if (app.entities) free(app.entities);
+
+    return 0; // Error code if needed.
 }
+
+// Expected time for a frame, in milliseconds.
+#define TARGET_FRAME_DURATION (1000 / 60)
 
 int main (int argc, char** argv)
 {
+    int frame_counter_fps_display;
+
     // Remember : await config.txt path to be first user passed argument.
     init_app(argc, argv);
 
-    Clock clock;
-    clock.last_time = SDL_GetTicks64();
-    // clock.current_time = 0;
-    // clock.delta_ticks = 0;
+    uint64_t t_end_frame = SDL_GetTicks64() - TARGET_FRAME_DURATION;
 
-    // Expected time for a frame, in milliseconds.
-    const Uint64 frame_duration_ms = (1000 / 60);
-
+    // Keep checking if there is any inputs, even outside of rendering.
     while ( handle_inputs() )
     {
-        clock.current_time = SDL_GetTicks64();
-        clock.delta_ticks = (clock.current_time - clock.last_time);
+        // time at the beginning of the frame.
+        uint64_t t_begin_frame = SDL_GetTicks64();
 
-        // If the last time we updated is old enough, so we respect targeted framerate.
-        // i.e. code in this if() section is frame capped.
-        if (frame_duration_ms < clock.delta_ticks)
+        // Skip the frame if it does not match our target framerate.
+        // i.e. if we compare <last frame end time> with <new time>.
+        if (t_begin_frame - t_end_frame < TARGET_FRAME_DURATION)
         {
-            // Display FPS in the render_window title.
-            // update_window_name(&render_window, "Hello: ", (float)clock.delta_ticks);
-            // Gameplay update
-            game_loop();
-            // Drawing shapes
-            render();
-
-            // Remember the time at which this frame end.
-            clock.last_time = SDL_GetTicks64();
+            // Sleep(17 - (int)(t_begin_frame - t_end_frame));
+            continue;
         }
+
+        if (++frame_counter_fps_display == 5)
+        {
+            // Display FPS in the render_window title, every 5 frames.
+            const int framerate = 1000 /(int)(t_begin_frame - t_end_frame);
+            update_window_name(framerate);
+            frame_counter_fps_display = 0;
+        }
+
+        // Gameplay update
+        game_loop();
+
+        // Drawing shapes
+        render();
+
+        t_end_frame = SDL_GetTicks64();
     }
 
-    quit_app();
-
-    return 0;
+    return quit_app();;
 }
