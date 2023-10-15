@@ -129,6 +129,7 @@ char *get_data_from_line(const char *line, const int data_start) {
         data[data_length] = '\0'; // Add the end of string character
     } else {
         fprintf(stderr, "%s: %s\n", line, "could not copy data from configs.");  // NOLINT(cert-err33-c) - Error Output
+        abort();
         return 0;
     }
 

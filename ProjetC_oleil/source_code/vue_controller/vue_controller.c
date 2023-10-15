@@ -231,7 +231,8 @@ void render(void) {
 
         // Render Border
         SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
-        SDL_Rect border = {10, 10, app.config->window_size.x - 10, app.config->window_size.y - 10};
+        // Border w and h is -20, because it cumulates both the margin and the offset.
+        SDL_Rect border = {10, 10, app.config->window_size.x - 20, app.config->window_size.y - 20};
         SDL_RenderDrawRect(render_window.sdl_renderer,
                            &border); // Render Goal. @todo add offset to center it's coord
 

@@ -10,6 +10,7 @@ int quit_app(int message)
     if (app.entities->player) free(app.entities->player);
     if (app.entities->solar_systems) free(app.entities->solar_systems);
     if (app.entities) free(app.entities);
+    if (app.config) free(app.config);
 
     return message; // Error code if needed.
 }
