@@ -4,6 +4,7 @@
 const struct SDL_Color red = {0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE};
 const struct SDL_Color green = {0x00, 0xFF, 0x00, SDL_ALPHA_OPAQUE};
 const struct SDL_Color blue = {0x00, 0x00, 0xFF, SDL_ALPHA_OPAQUE};
+const struct SDL_Color cyan = {0x00, 0xFF, 0xFF, SDL_ALPHA_OPAQUE};
 const struct SDL_Color black = {0x00, 0x00, 0x00, SDL_ALPHA_OPAQUE};
 const struct SDL_Color white = {0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE};
 const struct SDL_Color grey = {0x40, 0x40, 0x40, SDL_ALPHA_OPAQUE};
@@ -204,7 +205,7 @@ void render_systems(void) {
                         (p->orbit < 0 ? (-p->orbit) : p->orbit));
 
             // Draw Planet
-            SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
+            SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(cyan));
             render_fill_circle(
                     render_window.sdl_renderer,
                     (int) p->location.x,
@@ -228,12 +229,19 @@ void render(void) {
         SDL_RenderClear(render_window.sdl_renderer);
         SDL_UpdateWindowSurface(render_window.sdl_win);
 
+        // Render Border
+        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
+        SDL_Rect border = {10, 10, app.config->window_size.x - 10, app.config->window_size.y - 10};
+        SDL_RenderDrawRect(render_window.sdl_renderer,
+                           &border); // Render Goal. @todo add offset to center it's coord
+
         render_systems();
 
         render_player();
 
+        // Render END
         SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
-        SDL_RenderFillRect(render_window.sdl_renderer,
+        SDL_RenderDrawRect(render_window.sdl_renderer,
                            app.entities->end); // Render Goal. @todo add offset to center it's coord
 
         SDL_RenderPresent(render_window.sdl_renderer);

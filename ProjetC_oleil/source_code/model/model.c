@@ -6,17 +6,18 @@ const Vector2f vector2f_zero = {0.f, 0.f};
 
 // Global container for the app.
 RenderWindow render_window = {NULL, NULL, NULL};
-App app = {NULL, NULL, 0, 0, 0};
+App app = {NULL, NULL, 0, 0, 0, 0, 0};
 
 char *get_config_file_name(char **argv) {
     return (argv && argv[1]) ? argv[1] : "config.txt";
 }
 
-Config load_config(const char *file_name) {
-    Config c = {{720, 480}, {100, 100}, {0, 0}, 2, 10};
-    app.config = &c;
+Config* load_config(const char *file_name) {
+    app.config = calloc(1, sizeof(Config));
 
+    assert(app.config);
     assert(file_name);
+
     if (file_name != NULL) {
         int line_index = 0;
 
@@ -72,14 +73,20 @@ Config load_config(const char *file_name) {
         }
     }
 
-    return c;
+    return app.config;
 }
 
 int find_config_line_name(const char *line, char *out_config_name) {
     int char_index = 0;
-    // Until we found the separator ...
+    // Until we found the separator or goes out of range...
     while ((line[char_index] != SEPARATOR_SPACE) && (char_index < CONFIG_BUFFER_MAX_SIZE))
         ++char_index;
+
+    if (char_index == (CONFIG_BUFFER_MAX_SIZE - 1))
+    {
+        fprintf(stderr, "%s\n", "Config name not valid.");  // NOLINT(cert-err33-c) - Error Output
+        abort();
+    }
 
     // Once done, copy the data from beginning to separator into the argument char*
     SDL_strlcpy(out_config_name, line, ++char_index);
@@ -452,8 +459,6 @@ void keep_player_on_screen(void) {
 
 void update_planet_location(float time, Planet *p) {
     assert(p);
-
-
 }
 
 void init_app(const int n_args, char **argv) {
@@ -516,15 +521,6 @@ void init_config(const char *file_name) {
         abort();
     }
     load_config(file_name);
-
-    assert(app.config->window_size.x > 0);
-    assert(app.config->window_size.y > 0);
-    assert(app.config->nb_solar_systems > 0);
-    assert(app.config->player_size > 0);
-    assert(app.entities->player->location.x > 0);
-    assert(app.entities->player->location.x < app.config->window_size.x);
-    assert(app.entities->player->location.y > 0);
-    assert(app.entities->player->location.y < app.config->window_size.y);
 }
 
 void init_render_window(const int width, const int height, const char *name) {
@@ -642,15 +638,22 @@ void game_loop(void) {
 
 void physic_update(void) {
     static float simulated_time_D = 0.0f;
-    simulated_time_D += 0.015f;
+    simulated_time_D += (float)app.delta_time / 1000;
 
     for (int i = 0; i < app.entities->nb_solar_systems; ++i) {
         for (int j = 0; j < app.entities->solar_systems[i]->nb_planets; ++j) {
             Planet *p = &(app.entities->solar_systems[i]->planets[j]);
 
             // @todo PREVIEW CODE, put into function, implements time for revolution.
-            p->location.x = (float) p->parent_system->location.x + cosf(simulated_time_D) * (float) p->orbit;
-            p->location.y = (float) p->parent_system->location.y + sinf(simulated_time_D) * (float) p->orbit;
+            const int tr = p->radius;
+            p->location.x =
+                    (float) p->parent_system->location.x
+                    + cosf(simulated_time_D * (float)(tr / (2*M_PI)))
+                    * (float)p->orbit;
+            p->location.y =
+                    (float) p->parent_system->location.y
+                    + sinf(simulated_time_D * (float)(tr / (2*M_PI)))
+                    * (float)p->orbit;
         }
     }
 

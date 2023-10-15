@@ -7,9 +7,7 @@
 #include <unistd.h>
 #elif defined(_WIN32) || defined(WIN32)
 #define OS_Windows 1
-
 #include <windows.h>
-
 #endif
 
 #include <SDL.h>
@@ -17,7 +15,6 @@
 #include <assert.h>
 #include <string.h>
 #include <math.h>
-#include <time.h>
 
 #define PRINT_CONFIG_CREATION 0
 
@@ -203,12 +200,15 @@ typedef struct App {
     int mouse_x, mouse_y;
     int simulation_started;
     int score;
+    int delta_time;
+    int simulation_time;
 } App;
 // Global variable, container for App wide data.
 extern App app;
 #pragma endregion
 
 #pragma region Collisions
+// @todo : Implements collision functions.
 int is_colliding_circle(const Player *player, const SDL_FPoint location, int radius);
 // int is_colliding_planet(const Player* player, const Planet* planet);
 // int is_colliding_star(const Player* player, const Planet* planet);
@@ -228,9 +228,9 @@ char *get_config_file_name(char **argv);
 /**
  * \brief Load and read the file from <file_name> file on disk. Abort program on error.
  * \param file_name Name of the file to be loaded, include extension.
- * \return Config struct from the data read in file.
+ * \return Config* struct from the data read in file.
  */
-Config load_config(const char *file_name);
+Config* load_config(const char *file_name);
 
 /**
  * \brief Find the name of a config from a line.
