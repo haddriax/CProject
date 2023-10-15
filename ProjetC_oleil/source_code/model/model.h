@@ -147,6 +147,11 @@ typedef struct Player {
 
     Vector2f velocity;
 
+    /**
+    * \brief Force resulting from the player input.
+    */
+    Vector2f thrust;
+
     float mass;
 
 } Player;
@@ -209,11 +214,9 @@ extern App app;
 
 #pragma region Collisions
 // @todo : Implements collision functions.
-int is_colliding_circle(const Player *player, const SDL_FPoint location, int radius);
-// int is_colliding_planet(const Player* player, const Planet* planet);
-// int is_colliding_star(const Player* player, const Planet* planet);
-// int is_colliding_end(const Player* player, const End* end);
-// int is_any_collision(const Player* player);
+int is_colliding_rect_circle(const SDL_FRect *rect, const SDL_FPoint* location, int radius);
+// int is_colliding_frect_frect(const SDL_FRect *rect, const SDL_FRect *rect);
+// int is_colliding_rect_rect(const SDL_Rect *rect, const SDL_Rect *rect);
 #pragma endregion
 
 #pragma region File_Reading
@@ -377,6 +380,8 @@ void apply_player_velocity(void);
 void planet_revolution_update(void);
 
 void apply_velocity_to_fpoint(SDL_FPoint* target_point, const Vector2f* v);
+
+int check_player_planets_collisions(void);
 
 /**
  * \brief Compute physic (forces and movement) and apply new position to entities.

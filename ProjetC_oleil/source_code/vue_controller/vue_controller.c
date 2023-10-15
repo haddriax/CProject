@@ -10,6 +10,8 @@ const struct SDL_Color white = {0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE};
 const struct SDL_Color grey = {0x40, 0x40, 0x40, SDL_ALPHA_OPAQUE};
 const struct SDL_Color yellow = {0xFA, 0xFA, 0x37, SDL_ALPHA_OPAQUE};
 
+KeyFlags key_flags = {0, 0, 0, 0, 0};
+
 int handle_inputs(void) {
     // Static <=> this variable exist only ONE time in app.
     static SDL_Event e;
@@ -39,18 +41,19 @@ void keyboard_key_down(const SDL_KeyboardEvent *key_event) {
     Player *p = app.entities->player;
     switch (key_event->keysym.sym) {
         case SDLK_RIGHT:
-            p->velocity.x = 1;
+            key_flags.right = 1;
             break;
         case SDLK_LEFT:
-            p->velocity.x = -1;
+            key_flags.left = 1;
             break;
         case SDLK_UP:
-            p->velocity.y = -1;
+            key_flags.up = 1;
             break;
         case SDLK_DOWN:
-            p->velocity.y = 1;
+            key_flags.down = 1;
             break;
         case SDLK_SPACE:
+            key_flags.space = 1;
             app.simulation_started = 1; // On SPACE pressed, start the simulation.
     }
 }
@@ -59,15 +62,19 @@ void keyboard_key_up(const SDL_KeyboardEvent *key_event) {
     Player *p = app.entities->player;
     switch (key_event->keysym.sym) {
         case SDLK_RIGHT:
+            key_flags.right = 0;
+            break;
         case SDLK_LEFT:
-            p->velocity.x = 0.f;
-            p->velocity.x = 0.f;
+            key_flags.left = 0;
             break;
         case SDLK_UP:
-        case SDLK_DOWN:
-            p->velocity.y = 0.f;
-            p->velocity.y = 0.f;
+            key_flags.up = 0;
             break;
+        case SDLK_DOWN:
+            key_flags.down = 0;
+            break;
+        case SDLK_SPACE:
+            key_flags.space = 0;
         default:
             break;
     }

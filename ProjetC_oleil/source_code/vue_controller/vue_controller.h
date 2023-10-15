@@ -17,6 +17,7 @@ typedef struct KeyFlags {
     int space;
 
 } KeyFlags;
+extern KeyFlags key_flags;
 
 /**
  * \brief Loop.Check Inputs queue and call appropriate function if any is detected.

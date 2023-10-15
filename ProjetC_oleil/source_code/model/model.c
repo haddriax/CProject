@@ -12,7 +12,7 @@ char *get_config_file_name(char **argv) {
     return (argv && argv[1]) ? argv[1] : "config.txt";
 }
 
-Config* load_config(const char *file_name) {
+Config *load_config(const char *file_name) {
     app.config = calloc(1, sizeof(Config));
 
     assert(app.config);
@@ -82,8 +82,7 @@ int find_config_line_name(const char *line, char *out_config_name) {
     while ((line[char_index] != SEPARATOR_SPACE) && (char_index < CONFIG_BUFFER_MAX_SIZE))
         ++char_index;
 
-    if (char_index == (CONFIG_BUFFER_MAX_SIZE - 1))
-    {
+    if (char_index == (CONFIG_BUFFER_MAX_SIZE - 1)) {
         fprintf(stderr, "%s\n", "Config name not valid.");  // NOLINT(cert-err33-c) - Error Output
         abort();
     }
@@ -451,7 +450,7 @@ void keep_player_on_screen(void) {
 
     // Up (y) boundary.
     if (p->location.y < 0)
-        p->location.y = (float) app.config->window_size.y - 20 -(float) player_width;
+        p->location.y = (float) app.config->window_size.y - 20 - (float) player_width;
 
     // Down (y) boundary.
     if (p->location.y + (float) player_width > (float) app.config->window_size.y)
@@ -499,11 +498,7 @@ void init_app(const int n_args, char **argv) {
     }
 
     //Create and initialize display.
-    init_render_window(
-            app.config->window_size.x,
-            app.config->window_size.y,
-            APP_DEFAULT_NAME
-    );
+    init_render_window(app.config->window_size.x, app.config->window_size.y, APP_DEFAULT_NAME);
 
     assert(app.config != NULL);
     assert(app.entities != NULL);
@@ -531,15 +526,9 @@ void init_render_window(const int width, const int height, const char *name) {
                 SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
         abort();
     } else {
-        SDL_Window *window = render_window.sdl_win =
-                                     SDL_CreateWindow(
-                                             name,
-                                             SDL_WINDOWPOS_CENTERED,
-                                             SDL_WINDOWPOS_CENTERED,
-                                             width,
-                                             height,
-                                             SDL_WINDOW_SHOWN
-                                     );
+        SDL_Window *window = render_window.sdl_win = SDL_CreateWindow(name, SDL_WINDOWPOS_CENTERED,
+                                                                      SDL_WINDOWPOS_CENTERED, width, height,
+                                                                      SDL_WINDOW_SHOWN);
 
         if (window == NULL) {
             fprintf(stderr, "2 SDL could not initialize! SDL_CreateWindow returned NULL: %s\n",
@@ -590,6 +579,22 @@ float dot_product(const Vector2i *v1, const Vector2i *v2) {
     return (float) ((v1->x * v2->x) + (v1->y * v2->y));
 }
 
+int is_colliding_rect_circle(const SDL_FRect *rect, const SDL_FPoint *location, int radius) {
+    float dist_x = fabsf(location->x - rect->x);
+    float dist_y = fabsf(location->y - rect->y);
+
+    if (dist_x > (rect->w / 2 + (float) radius)) { return 0; }
+    if (dist_y > (rect->h / 2 + (float) radius)) { return 0; }
+
+    if (dist_x <= (rect->w / 2)) { return 1; }
+    if (dist_y <= (rect->h / 2)) { return 1; }
+
+    // Corner collision
+    float corner_dist_squ = powf(dist_x - rect->w / 2, 2) + powf(dist_y - rect->h / 2, 2);
+
+    return (corner_dist_squ <= (float) (radius * radius));
+}
+
 void player_update(void) {
     SDL_FRect *r = &app.entities->player->draw_rect;
 
@@ -599,31 +604,45 @@ void player_update(void) {
 
 void apply_player_velocity(void) {
     // @todo: Normalized direction * speed for proper movement.
-    apply_velocity_to_fpoint( &app.entities->player->location, &app.entities->player->velocity);
+    apply_velocity_to_fpoint(&app.entities->player->location, &app.entities->player->velocity);
 }
 
 void planet_revolution_update(void) {
     static float simulated_time_D = 0.0f;
-    simulated_time_D += (float)app.delta_time / 1000;
+    simulated_time_D += (float) app.delta_time / 1000;
 
     for (int i = 0; i < app.entities->nb_solar_systems; ++i) {
         for (int j = 0; j < app.entities->solar_systems[i]->nb_planets; ++j) {
             Planet *p = &(app.entities->solar_systems[i]->planets[j]);
 
             const int tr = p->radius;
-            p->location.x =
-                    (float)p->parent_system->location.x
-                    + cosf(simulated_time_D * (float)(tr / (2*M_PI)))
-                      * (float)p->orbit;
-            p->location.y =
-                    (float) p->parent_system->location.y
-                    + sinf(simulated_time_D * (float)(tr / (2*M_PI)))
-                      * (float)p->orbit;
+            p->location.x = (float) p->parent_system->location.x +
+                            cosf(simulated_time_D * (float) (tr / (2 * M_PI))) * (float) p->orbit;
+            p->location.y = (float) p->parent_system->location.y +
+                            sinf(simulated_time_D * (float) (tr / (2 * M_PI))) * (float) p->orbit;
         }
     }
 }
 
-void apply_velocity_to_fpoint(SDL_FPoint* target_point, const Vector2f* v) {
+int check_player_planets_collisions(void) {
+    for (int i = 0; i < app.entities->nb_solar_systems; ++i) {
+        const SolarSystem* s = app.entities->solar_systems[i];
+        SDL_FPoint tmp = {
+                (float)s->location.x,
+                (float)s->location.y
+        };
+        if (is_colliding_rect_circle(&app.entities->player->draw_rect, &tmp, s->radius))
+            return 1;
+        for (int j = 0; j < s->nb_planets; ++j) {
+            const Planet *p = &(s->planets[j]);
+            if (is_colliding_rect_circle(&app.entities->player->draw_rect, &p->location, p->radius))
+                return 1;
+        }
+    }
+    return 0;
+}
+
+void apply_velocity_to_fpoint(SDL_FPoint *target_point, const Vector2f *v) {
     target_point->x += v->x;
     target_point->y += v->y;
 }
@@ -653,11 +672,9 @@ struct Vector2f grav(int d, int mv, int mp, const int G, const Vector2f *distanc
 struct Vector2f somme_forces() {
 }
 
-void game_loop(void) {
-    physic_update();
-}
-
 void physic_update(void) {
+    if (check_player_planets_collisions())
+        exit(0);
 
     planet_revolution_update();
 
@@ -668,4 +685,8 @@ void physic_update(void) {
         keep_player_on_screen();
         player_update();
     }
+}
+
+void game_loop(void) {
+    physic_update();
 }
