@@ -442,20 +442,20 @@ void keep_player_on_screen(void) {
     const int player_width = app.config->player_size;
 
     // Left (x) boundary.
-    if (p->location.x < 0)
-        p->location.x = (float) app.config->window_size.x - (float) player_width;
+    if (p->location.x < 10)
+        p->location.x = (float) app.config->window_size.x - 20 - (float) player_width;
 
     // Right (x) boundary.
     if (p->location.x + (float) player_width > (float) app.config->window_size.x)
-        p->location.x = 0;
+        p->location.x = 10;
 
     // Up (y) boundary.
     if (p->location.y < 0)
-        p->location.y = (float) app.config->window_size.y - (float) player_width;
+        p->location.y = (float) app.config->window_size.y - 20 -(float) player_width;
 
     // Down (y) boundary.
     if (p->location.y + (float) player_width > (float) app.config->window_size.y)
-        p->location.y = 0;
+        p->location.y = 10;
 }
 
 void update_planet_location(float time, Planet *p) {
@@ -606,6 +606,28 @@ void apply_player_velocity(void) {
     app.entities->player->location.y += app.entities->player->velocity.y;
 }
 
+void planet_revolution_update(void) {
+    static float simulated_time_D = 0.0f;
+    simulated_time_D += (float)app.delta_time / 1000;
+
+    for (int i = 0; i < app.entities->nb_solar_systems; ++i) {
+        for (int j = 0; j < app.entities->solar_systems[i]->nb_planets; ++j) {
+            Planet *p = &(app.entities->solar_systems[i]->planets[j]);
+
+            const int tr = p->radius;
+            p->location.x =
+                    (float)p->parent_system->location.x
+                    + cosf(simulated_time_D * (float)(tr / (2*M_PI)))
+                      * (float)p->orbit;
+            p->location.y =
+                    (float) p->parent_system->location.y
+                    + sinf(simulated_time_D * (float)(tr / (2*M_PI)))
+                      * (float)p->orbit;
+        }
+    }
+}
+
+
 Vector2f vector_divi(const Vector2f *v, float divisor) {
     assert(divisor > 0);
     Vector2f res = {v->x / divisor, v->y / divisor};
@@ -629,8 +651,6 @@ struct Vector2f grav(int d, int mv, int mp, const int G, const Vector2f *distanc
 }
 
 struct Vector2f somme_forces() {
-
-
 }
 
 void game_loop(void) {
@@ -638,33 +658,14 @@ void game_loop(void) {
 }
 
 void physic_update(void) {
-    static float simulated_time_D = 0.0f;
-    simulated_time_D += (float)app.delta_time / 1000;
 
-    for (int i = 0; i < app.entities->nb_solar_systems; ++i) {
-        for (int j = 0; j < app.entities->solar_systems[i]->nb_planets; ++j) {
-            Planet *p = &(app.entities->solar_systems[i]->planets[j]);
-
-            // @todo PREVIEW CODE, put into function, implements time for revolution.
-            const int tr = p->radius;
-            p->location.x =
-                    (float) p->parent_system->location.x
-                    + cosf(simulated_time_D * (float)(tr / (2*M_PI)))
-                    * (float)p->orbit;
-            p->location.y =
-                    (float) p->parent_system->location.y
-                    + sinf(simulated_time_D * (float)(tr / (2*M_PI)))
-                    * (float)p->orbit;
-        }
-    }
-
+    planet_revolution_update();
 
     if (app.simulation_started) {
         app.entities->player->velocity.x = 1.7f;
         app.entities->player->velocity.y = 1.00f;
         apply_player_velocity();
-        // keep_player_on_screen();
+        keep_player_on_screen();
         player_update();
     }
 }
-

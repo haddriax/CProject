@@ -376,6 +376,8 @@ void player_update(void);
 
 void apply_player_velocity(void);
 
+void planet_revolution_update(void);
+
 /**
  * \brief Compute physic (forces and movement) and apply new position to entities.
  */
