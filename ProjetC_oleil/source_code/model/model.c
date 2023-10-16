@@ -598,11 +598,13 @@ void planet_revolution_update(void) {
         for (int j = 0; j < app.entities->solar_systems[i]->nb_planets; ++j) {
             Planet *p = &(app.entities->solar_systems[i]->planets[j]);
 
-            const int tr = p->radius;
-            p->location.x = (float) p->parent_system->location.x +
-                            cosf(simulated_time_D * (float) (tr / (2 * M_PI))) * (float) p->orbit;
-            p->location.y = (float) p->parent_system->location.y +
-                            sinf(simulated_time_D * (float) (tr / (2 * M_PI))) * (float) p->orbit;
+            const float tr = p->radius;
+            p->location.x = p->parent_system->location.x +
+                            cosf(simulated_time_D * (float) (tr / (2 * M_PI)) * (p->orbit < 0 ? -1.f : 1.f)
+                            ) * p->orbit;
+            p->location.y = p->parent_system->location.y +
+                            sinf(simulated_time_D * (float) (tr / (2 * M_PI)) * (p->orbit < 0 ? -1.f : 1.f)
+                            ) * p->orbit;
         }
     }
 }
@@ -692,7 +694,6 @@ Vector2f sum_forces(const Vector2f* vector_list, int length)
     }
     return res;
 }
-#pragma endregion // Physic
 
 void physic_update(void) {
     if (check_player_planets_collisions())
@@ -737,6 +738,7 @@ void apply_forces() {
     player->velocity.x = result_sum_forces.x * speed;
     player->velocity.y = result_sum_forces.y * speed;
 }
+#pragma endregion // Physic
 
 void game_loop(float delta_time) {
     physic_update();

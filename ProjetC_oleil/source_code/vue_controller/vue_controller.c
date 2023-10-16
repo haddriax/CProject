@@ -51,6 +51,9 @@ void keyboard_key_down(const SDL_KeyboardEvent *key_event) {
         case SDLK_DOWN:
             key_flags.down = 1;
             break;
+        case SDLK_ESCAPE:
+            quit(Exit, NULL);
+            break;
         case SDLK_SPACE:
             key_flags.space = 1;
             app.simulation_started = 1; // On SPACE pressed, start the simulation.

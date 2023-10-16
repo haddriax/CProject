@@ -36,8 +36,11 @@ void keyboard_key_down(const SDL_KeyboardEvent *key_event);
 */
 void keyboard_key_up(const SDL_KeyboardEvent *key_event);
 
-// @todo documentation
-void update_window_name(const int framerate);
+/**
+ * \brief Update the name of the window with new score and framerate values.
+ * \param: framerate framerate to show.
+*/
+void update_window_name(int framerate);
 
 #pragma region Drawing_fuction
 
@@ -63,17 +66,26 @@ int render_fill_circle(SDL_Renderer *renderer, int x, int y, int radius);
 
 #pragma endregion
 
+/**
+ * \brief Render all Systems and Planets.
+ */
 void render_systems(void);
 
 /**
- * \brief Render player as a filled red rectangle using Its SDL_FRect.
+ * \brief Render player as a filled red rectangle using its SDL_FRect.
  */
 void render_player(void);
-
+/**
+ * \brief Render goal as a white rectangle using its SDL_FRect.
+ */
 void render_end(void);
-
+/**
+ * \brief Render border as a white rectangle using its SDL_FRect.
+ */
 void render_border(void);
-
+/**
+ * \brief Clear window, set surface to black.
+ */
 void render_clear(void);
 
 /**
