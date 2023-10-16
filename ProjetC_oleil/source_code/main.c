@@ -20,7 +20,7 @@ int quit_app(int message)
 
 int main (int argc, char** argv)
 {
-    int frame_counter_fps_display;
+    int frame_counter_fps_display = 0;
 
     // Remember : await config.txt path to be first user passed argument.
     init_app(argc, argv);
@@ -31,7 +31,7 @@ int main (int argc, char** argv)
     while ( handle_inputs() )
     {
         // Store begin frame time, in ms since app launched.
-        uint64_t t_begin_frame = SDL_GetTicks64();
+        const uint64_t t_begin_frame = SDL_GetTicks64();
 
         // Skip the frame if it does not match our target framerate.
         // i.e. if we compare <last frame end time> with <new time>.

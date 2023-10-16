@@ -209,15 +209,15 @@ void render_player(void) {
     }
 
     // Only if vector length is slightly bigger than zero.
-    if (fabsf(p->velocity.x + p->velocity.y) >= 0.05f)
+    if (fabsf(p->direction.x * p->speed + p->direction.y * p->speed) >= 0.05f)
     {
         // Render velocity vector.
         SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(green));
         SDL_RenderDrawLineF(render_window.sdl_renderer,
                             p->location.x,
                             p->location.y,
-                            (p->location.x + p->velocity.x * 25)  ,
-                            (p->location.y + p->velocity.y * 25) );
+                            (p->location.x + p->direction.x * p->speed * 25)  ,
+                            (p->location.y + p->direction.y * p->speed * 25) );
     }
 
 }
@@ -231,7 +231,7 @@ void render(void) {
         // Render Border
         SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
         // Border w and h is -20, because it cumulates both the margin and the offset.
-        SDL_Rect border = {10, 10, app.config->window_size.x - 20, app.config->window_size.y - 20};
+        const SDL_Rect border = {10, 10, app.config->window_size.x - 20, app.config->window_size.y - 20};
         SDL_RenderDrawRect(render_window.sdl_renderer,
                            &border); // Render Goal.
 
@@ -246,7 +246,6 @@ void render(void) {
 
         SDL_RenderPresent(render_window.sdl_renderer);
     } else {
-        fprintf(stderr, "%s\n",
-                "Error in rendering, pointer to SDL_Renderer is NULL.");  // NOLINT(cert-err33-c) - Error Output
+        fprintf(stderr, "%s\n", "Error in rendering, pointer to SDL_Renderer is NULL.");  // NOLINT(cert-err33-c) - Error Output
     }
 }

@@ -145,7 +145,8 @@ typedef struct Player {
      */
     SDL_FRect draw_rect;
 
-    Vector2f velocity;
+    Vector2f direction;
+    float speed;
 
     /**
     * \brief Force resulting from the player input.
@@ -164,7 +165,7 @@ typedef struct Planet {
 } Planet;
 
 typedef struct SolarSystem {
-    SDL_Point location;
+    SDL_FPoint location;
     int radius;
     int nb_planets;
     float mass;
@@ -177,7 +178,6 @@ typedef struct Entities {
     SDL_Rect *end;
     SolarSystem **solar_systems;
     int nb_solar_systems;
-
 } Entities;
 
 /** @brief: Contain the data from the Config.txt file on disk */
@@ -207,6 +207,9 @@ typedef struct App {
     int score;
     int delta_time;
     int simulation_time;
+
+    Vector2f* list_forces;
+    int nb_forces;
 } App;
 // Global variable, container for App wide data.
 extern App app;
@@ -378,6 +381,8 @@ void player_update(void);
 void apply_player_velocity(void);
 
 void planet_revolution_update(void);
+
+
 
 void apply_velocity_to_fpoint(SDL_FPoint* target_point, const Vector2f* v);
 

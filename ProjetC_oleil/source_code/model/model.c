@@ -147,7 +147,7 @@ int validate_is_int(const char *data) {
 }
 
 int validate_is_signed_int(const char *data) {
-    size_t i;
+    size_t i = 0;
     // Check if first char is the sign
     if (data[0] == '-')
         i = 1;
@@ -340,8 +340,8 @@ SolarSystem *build_system(FILE *file, int *line_index, Vector2i spawn_location) 
     SolarSystem *s = calloc(1, sizeof(SolarSystem));
     app.entities->solar_systems[creation_id] = s;
     if (s != NULL) {
-        s->location.x = spawn_location.x;
-        s->location.y = spawn_location.y;
+        s->location.x = (float)spawn_location.x;
+        s->location.y = (float)spawn_location.y;
         // printf("STAR POS [%i:%i]\n", s->location.x, s->location.y);
     }
 
@@ -483,7 +483,8 @@ void init_app(const int n_args, char **argv) {
         p_ptr->location.y = 450;
         p_ptr->draw_rect.h = PLAYER_SIZE;
         p_ptr->draw_rect.w = PLAYER_SIZE;
-        p_ptr->velocity = vector2f_zero;
+        p_ptr->direction = vector2f_zero;
+        p_ptr->mass = 2;
         app.entities->player = p_ptr;
     } else {
         printf("%s\n", " Error when allocating memory for Player struct");
@@ -604,7 +605,7 @@ void player_update(void) {
 
 void apply_player_velocity(void) {
     // @todo: Normalized direction * speed for proper movement.
-    apply_velocity_to_fpoint(&app.entities->player->location, &app.entities->player->velocity);
+    // apply_velocity_to_fpoint(&app.entities->player->location, &app.entities->player->direction);
 }
 
 void planet_revolution_update(void) {
@@ -653,23 +654,24 @@ Vector2f vector_divi(const Vector2f *v, float divisor) {
     return res;
 }
 
-/*
 void vector_normalize(Vector2f* v)
 {
 	int x = v->x;
 	int y = (*v).y;
-	return vector_divi(v, sqrt(x * x + y * y));
-}
-*/
-
-struct Vector2f grav(int d, int mv, int mp, const int G, const Vector2f *distance) {
-    float F = G * (mv * mp) / (d * d);
-    Vector2f v = {F * distance->x, F * distance->y};
-    return v;
-
+	// return vector_divi(v, sqrt(x * x + y * y));
 }
 
-struct Vector2f somme_forces() {
+
+
+Vector2f grav(int d, int mass_player, int mass_star, const Vector2f *distance) {
+    // float F = (GRAVITY * (mass_player * mass_star) / (d * d));
+    //Vector2f v = {F * distance->x, F * distance->y};
+    //return v;
+    return vector2f_zero;
+}
+
+void forces_applied(void)
+{
 }
 
 void physic_update(void) {
@@ -679,8 +681,6 @@ void physic_update(void) {
     planet_revolution_update();
 
     if (app.simulation_started) {
-        app.entities->player->velocity.x = 1.7f;
-        app.entities->player->velocity.y = 1.00f;
         apply_player_velocity();
         keep_player_on_screen();
         player_update();
