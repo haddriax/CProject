@@ -170,10 +170,8 @@ extern App app;
 #pragma endregion
 
 #pragma region Collisions
-// @todo : Implements collision functions.
 int is_colliding_rect_circle(const SDL_FRect *rect, const SDL_FPoint *location, float radius);
-// int is_colliding_frect_frect(const SDL_FRect *rect, const SDL_FRect *rect);
-// int is_colliding_rect_rect(const SDL_Rect *rect, const SDL_Rect *rect);
+int is_colliding_FRect_FRect(const SDL_FRect *r1, const SDL_FRect *r2);
 #pragma endregion
 
 #pragma region File_Reading

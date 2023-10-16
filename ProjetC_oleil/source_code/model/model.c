@@ -19,7 +19,7 @@ Config *load_config(const char *file_name) {
     assert(file_name);
 
     if (file_name != NULL) {
-        int line_index = 0;
+        int line_index = 0; // @todo Should be remove, check for usages before.
 
         // Try to open file.
         FILE *file = NULL;
@@ -37,6 +37,9 @@ Config *load_config(const char *file_name) {
             char line[max_config_large_buffer_size];
 
             while (fgets(line, max_config_lines, file)) {
+
+                // if (line[0] == '\n') continue; // Do we accept blank lines ? (if yes, must be done in build_systems too)
+
                 // 0/ Prepare a buffer.
                 char config_name[CONFIG_BUFFER_MAX_SIZE];
 
@@ -568,16 +571,27 @@ int is_colliding_rect_circle(const SDL_FRect *rect, const SDL_FPoint *location, 
     float dist_x = fabsf(location->x - rect->x);
     float dist_y = fabsf(location->y - rect->y);
 
-    if (dist_x > (rect->w / 2 + (float) radius)) { return 0; }
-    if (dist_y > (rect->h / 2 + (float) radius)) { return 0; }
+    if (dist_x > (rect->w / 2 + radius)) return 0;
+    if (dist_y > (rect->h / 2 + radius)) return 0;
 
-    if (dist_x <= (rect->w / 2)) { return 1; }
-    if (dist_y <= (rect->h / 2)) { return 1; }
+    if (dist_x <= (rect->w / 2)) return 1;
+    if (dist_y <= (rect->h / 2)) return 1;
 
     // Corner collision
-    float corner_dist_squ = powf(dist_x - rect->w / 2, 2) + powf(dist_y - rect->h / 2, 2);
+    float corner_dist_squared = powf(dist_x - rect->w / 2, 2) + powf(dist_y - rect->h / 2, 2);
 
-    return (corner_dist_squ <= (radius * radius));
+    return (corner_dist_squared <= (radius * radius));
+}
+
+int is_colliding_FRect_FRect(const SDL_FRect *r1, const SDL_FRect *r2) {
+    // Up
+    // @todo
+    // Down
+    // @todo
+    // Left
+    // @todo
+    // Right
+    // @todo
 }
 
 void player_update(void) {
@@ -765,7 +779,11 @@ void quit(quit_code code, const char* message) {
 
     if (app.entities->end) free(app.entities->end);
     if (app.entities->player) free(app.entities->player);
-    if (app.entities->solar_systems) free(app.entities->solar_systems);
+    for (int i = 0; i < app.entities->nb_solar_systems; ++i)
+    {
+        SolarSystem *s = app.entities->solar_systems[i];
+        if (s) free(s);
+    }
     if (app.entities) free(app.entities);
     if (app.config) free(app.config);
 
