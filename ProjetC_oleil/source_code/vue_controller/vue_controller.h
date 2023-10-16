@@ -2,7 +2,6 @@
 #define PROJECTC_OLEIL_VUE_CONTROLLER_H
 
 #include "../model/model.h"
-// #include <SDL2_gfxPrimitives.h>
 
 extern const struct SDL_Color red;
 extern const struct SDL_Color green;
@@ -70,6 +69,12 @@ void render_systems(void);
  * \brief Render player as a filled red rectangle using Its SDL_FRect.
  */
 void render_player(void);
+
+void render_end(void);
+
+void render_border(void);
+
+void render_clear(void);
 
 /**
  * \brief Execute all the rendering. Loop each frame.

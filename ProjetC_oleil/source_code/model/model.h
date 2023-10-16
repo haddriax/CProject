@@ -18,9 +18,10 @@
 
 #define PRINT_CONFIG_CREATION 0
 
-#define CONFIG_DEFAULT_NAME "config.txt"
 #define APP_DEFAULT_NAME "Projet C"
 
+#pragma region Configs_Names
+#define CONFIG_DEFAULT_NAME "config.txt"
 #define CONFIG_NAME_WINDOW_SIZE "WIN_SIZE"
 #define CONFIG_NAME_PLAYER_LOCATION "START"
 #define CONFIG_NAME_GOAL_LOCATION "END"
@@ -32,13 +33,13 @@
 #define CONFIG_NAME_PLANET_ORBIT "PLANET_ORBIT"
 #define SEPARATOR_SPACE ' '
 #define SEPARATOR_SUBSTRACT '-'
+#pragma endregion // Configs_Names
 
 #define COLOR_PARAMS(x) (x).r, (x).g, (x).b, (x).a
 
-#define GRAVITY = 1000.f
+#define GRAVITY_CONST 10.0f
 
 #define CONFIG_BUFFER_MAX_SIZE 32
-
 #define PLAYER_SIZE 10
 
 /**
@@ -56,6 +57,12 @@ typedef enum config_type {
     planet_orbit,
     none = 0
 } config_type;
+
+typedef enum quit_code {
+    Error = -1,
+    Exit = 1,
+    PlayerDied = 2
+} quit_code;
 
 enum {
     max_config_lines = 64,
@@ -82,51 +89,6 @@ typedef struct Vector2i {
 } Vector2i;
 extern const Vector2i vector2i_zero;
 
-/**
- * \brief Return a new Vector from the addition of the 2 parameters vectors.
- * \param v1 
- * \param v2 
- * \return New Vector2f from (v1 + v2)
- */
-Vector2i vector_add(const Vector2i *v1, const Vector2i *v2);
-
-/**
- * \brief Return a new Vector from the addition of the 2 parameters vectors.
- * \param v1
- * \param v2
- * \return New Vector2f from (v1 + v2)
- */
-Vector2f vectorf_add(const Vector2f *v1, const Vector2f *v2);
-
-/**
-* \brief Return a new Vector from the substraction of the 2 parameters vectors.
-* \return New Vector2f from (v1 - v2)
-*/
-Vector2i vector_sub(const Vector2i *v1, const Vector2i *v2);
-
-/** @brief: Return the result of the dot product from v1 and v2.
-@return: float (v1.v2)
-*/
-float dot_product(const Vector2i *v1, const Vector2i *v2);
-
-/** @todo !
-@brief: Scale v to a magnitude of 1
-*/
-void vector_normalize(Vector2i *v);
-
-/** @todo !
-@brief: Calculate the length of v. Calcul is heavy.
-@return: Length of v.
-*/
-float vector_length(const Vector2i *v);
-
-/**
-* @todo !
-* @brief: Calculate the (length*length) of v. Use it for comparison over vector_length
-* @return: Length of v.
-*/
-float vector_length_squared(const Vector2i *v);
-
 #pragma endregion
 
 #pragma region Typedef
@@ -135,37 +97,30 @@ float vector_length_squared(const Vector2i *v);
  * \brief Container for Player data
  */
 typedef struct Player {
-    /**
-     * \brief Player location (center of the rectangle)
-     */
+    /** \brief Player location (center of the rectangle) */
     SDL_FPoint location;
-
-    /**
-     * \brief Rectangle for rendering and collision.
-     */
+    /** \brief Rectangle for rendering and collision. */
     SDL_FRect draw_rect;
-
+    /** \brief Movement applied each frame. */
     Vector2f velocity;
-
-    /**
-    * \brief Force resulting from the player input.
-    */
+    /** \brief Force resulting from the player input. */
     Vector2f thrust;
-
     float mass;
+    float speed;
+    Vector2f direction;
 
 } Player;
 
 typedef struct Planet {
     SDL_FPoint location;
-    int radius;
-    int orbit;
+    float radius;
+    float orbit;
     struct SolarSystem *parent_system;
 } Planet;
 
 typedef struct SolarSystem {
-    SDL_Point location;
-    int radius;
+    SDL_FPoint location;
+    float radius;
     int nb_planets;
     float mass;
     Planet *planets;
@@ -206,7 +161,9 @@ typedef struct App {
     int simulation_started;
     int score;
     int delta_time;
-    int simulation_time;
+
+    Vector2f* list_forces;
+    int nb_forces;
 } App;
 // Global variable, container for App wide data.
 extern App app;
@@ -214,7 +171,7 @@ extern App app;
 
 #pragma region Collisions
 // @todo : Implements collision functions.
-int is_colliding_rect_circle(const SDL_FRect *rect, const SDL_FPoint* location, int radius);
+int is_colliding_rect_circle(const SDL_FRect *rect, const SDL_FPoint *location, float radius);
 // int is_colliding_frect_frect(const SDL_FRect *rect, const SDL_FRect *rect);
 // int is_colliding_rect_rect(const SDL_Rect *rect, const SDL_Rect *rect);
 #pragma endregion
@@ -285,7 +242,7 @@ int validate_is_vector(const char *data);
  * \param t config_type to expect
  * \return 1 for success, 0 if data validation failed.
  */
-int validate_config_line(const char *data, const config_type t);
+int validate_config_line(const char *data, config_type t);
 
 /**
  * \brief Read data and select appropriate function to process it
@@ -294,7 +251,7 @@ int validate_config_line(const char *data, const config_type t);
  * \param file File where config are read from. Used multiple line reading.
  * \param line_index Incremented index when reading line from file in argument.
  */
-void process_data(const char *data, const config_type type, FILE *file, int *line_index);
+void process_data(const char *data, config_type type, FILE *file, int *line_index);
 
 /**
  * \brief Read a Vector2i from a char*. X and Y values must be separated by a space.
@@ -327,7 +284,7 @@ int read_signed_int(const char *data);
 
 #pragma endregion
 
-#pragma region Initializer
+#pragma region Initializers&Builders
 
 /**
  * \brief Alloc and generate a new Solar System, expect file current line to be STAR_POS.
@@ -375,20 +332,63 @@ void keep_player_on_screen(void);
  */
 void player_update(void);
 
-void apply_player_velocity(void);
-
+/**
+ * \brief Update the planets location.
+ */
 void planet_revolution_update(void);
 
-void apply_velocity_to_fpoint(SDL_FPoint* target_point, const Vector2f* v);
-
+/**
+ * \brief Check if any planet or system collides with the player
+ * \return 1 if there is a collision, 0 otherwise.
+ */
 int check_player_planets_collisions(void);
 
 /**
- * \brief Compute physic (forces and movement) and apply new position to entities.
+ * \brief Compute physic (forces and movement) and apply new position to entities each frames.
  */
 void physic_update(void);
 
-void game_loop(void);
+/**
+* \brief Return a new Vector from the difference of the 2 parameters vectors.
+* \return New Vector2f from (v1 - v2)
+*/
+Vector2f vector_sub(const Vector2f* v1, const Vector2f* v2);
+
+/**
+ * \brief Return a new Vector from the addition of the 2 parameters vectors.
+ * \param v1
+ * \param v2
+ * \return New Vector2f from (v1 + v2)
+ */
+Vector2f vectorf_add(const Vector2f *v1, const Vector2f *v2);
+
+Vector2f direction_from_fpoint(const SDL_FPoint *p1, const SDL_FPoint *p2);
+
+/**
+ *  \brief Returns the distance btw a star and the ship;
+ */
+float calculate_distance(const SolarSystem* s);
+
+Vector2f sum_forces(const Vector2f* vector_list, int length);
+
+/**
+ * \brief Returns the vector of attraction between a star and the ship.
+ */
+Vector2f grav_force(const SolarSystem* s, const Vector2f *direction);
+
+void apply_forces(void);
+
+/**
+ * \brief Loop running each frame.
+ * \param delta_time time elapsed in ms since last update
+ */
+void game_loop(float delta_time);
+
+/**
+ * \brief Quit the app and clear memory. Log error in needed.
+ * \param code [1] Normal, [-1] Error. Define message output stream.
+ * \param message message to log into. Keep to NULL if no logs are needed.
+ */
+void quit(quit_code code, const char* message);
 
 #endif //PROJECTC_OLEIL_MODEL_H
-

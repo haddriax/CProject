@@ -129,7 +129,6 @@ char *get_data_from_line(const char *line, const int data_start) {
     } else {
         fprintf(stderr, "%s: %s\n", line, "could not copy data from configs.");  // NOLINT(cert-err33-c) - Error Output
         abort();
-        return 0;
     }
 
     return data;
@@ -222,6 +221,8 @@ void process_data(const char *data, const config_type type, FILE *file, int *lin
             app.config->nb_solar_systems = read_int(data);
             app.entities->nb_solar_systems = app.config->nb_solar_systems;
             app.entities->solar_systems = malloc(app.config->nb_solar_systems * sizeof(SolarSystem));
+            app.list_forces = calloc(app.entities->nb_solar_systems, sizeof(Vector2f));
+            app.nb_forces = app.entities->nb_solar_systems;
             assert(app.entities->solar_systems != NULL);
 #if PRINT_CONFIG_CREATION
             printf("Number of systems set to %i\n", app.config->nb_solar_systems);
@@ -328,8 +329,8 @@ int read_signed_int(const char *data) {
         }
     }
 
-    const int return_value = (data[0] == SEPARATOR_SUBSTRACT ? (SDL_atoi(&data[1]) * -1) : (SDL_atoi(&data[0])));
     // Multiply by -1 or 1, depending on first char.
+    const int return_value = (data[0] == SEPARATOR_SUBSTRACT ? (SDL_atoi(&data[1]) * -1) : (SDL_atoi(&data[0])));
     return return_value;
 }
 
@@ -358,7 +359,8 @@ SolarSystem *build_system(FILE *file, int *line_index, Vector2i spawn_location) 
         // 4/ First data validation.
         validate_config_line(data, t);
         // 5/ Read and apply data. Here STAR_RADIUS
-        s->radius = read_int(data);
+        s->radius = (float) read_int(data);
+        s->mass = s->radius;
 
         ++(*line_index);
         free(data);
@@ -484,6 +486,7 @@ void init_app(const int n_args, char **argv) {
         p_ptr->draw_rect.h = PLAYER_SIZE;
         p_ptr->draw_rect.w = PLAYER_SIZE;
         p_ptr->velocity = vector2f_zero;
+        p_ptr->mass = 2;
         app.entities->player = p_ptr;
     } else {
         printf("%s\n", " Error when allocating memory for Player struct");
@@ -493,8 +496,8 @@ void init_app(const int n_args, char **argv) {
     if (argv != NULL) {
         const char *config_file_name = get_config_file_name(argv);
         init_config(config_file_name);
-        app.entities->player->location.x = (float) app.config->player_start.x;
-        app.entities->player->location.y = (float) app.config->player_start.y;
+        app.entities->player->location.x = app.config->player_start.x;
+        app.entities->player->location.y = app.config->player_start.y;
     }
 
     //Create and initialize display.
@@ -554,13 +557,6 @@ void init_render_window(const int width, const int height, const char *name) {
     }
 }
 
-Vector2i vector_add(const Vector2i *v1, const Vector2i *v2) {
-    Vector2i vec;
-    vec.x = (v1->x + v2->x);
-    vec.y = (v1->y + v2->y);
-    return vec;
-}
-
 Vector2f vectorf_add(const Vector2f *v1, const Vector2f *v2) {
     Vector2f vec;
     vec.x = (v1->x + v2->x);
@@ -568,18 +564,7 @@ Vector2f vectorf_add(const Vector2f *v1, const Vector2f *v2) {
     return vec;
 }
 
-Vector2i vector_sub(const Vector2i *v1, const Vector2i *v2) {
-    Vector2i vec;
-    vec.x = (v1->x - v2->x);
-    vec.y = (v1->y - v2->y);
-    return vec;
-}
-
-float dot_product(const Vector2i *v1, const Vector2i *v2) {
-    return (float) ((v1->x * v2->x) + (v1->y * v2->y));
-}
-
-int is_colliding_rect_circle(const SDL_FRect *rect, const SDL_FPoint *location, int radius) {
+int is_colliding_rect_circle(const SDL_FRect *rect, const SDL_FPoint *location, float radius) {
     float dist_x = fabsf(location->x - rect->x);
     float dist_y = fabsf(location->y - rect->y);
 
@@ -592,19 +577,17 @@ int is_colliding_rect_circle(const SDL_FRect *rect, const SDL_FPoint *location, 
     // Corner collision
     float corner_dist_squ = powf(dist_x - rect->w / 2, 2) + powf(dist_y - rect->h / 2, 2);
 
-    return (corner_dist_squ <= (float) (radius * radius));
+    return (corner_dist_squ <= (radius * radius));
 }
 
 void player_update(void) {
+    app.entities->player->location.x += app.entities->player->velocity.x;
+    app.entities->player->location.y += app.entities->player->velocity.y;
+
     SDL_FRect *r = &app.entities->player->draw_rect;
 
     r->x = app.entities->player->location.x - (PLAYER_SIZE / 2.f);
     r->y = app.entities->player->location.y - (PLAYER_SIZE / 2.f);
-}
-
-void apply_player_velocity(void) {
-    // @todo: Normalized direction * speed for proper movement.
-    apply_velocity_to_fpoint(&app.entities->player->location, &app.entities->player->velocity);
 }
 
 void planet_revolution_update(void) {
@@ -642,51 +625,147 @@ int check_player_planets_collisions(void) {
     return 0;
 }
 
-void apply_velocity_to_fpoint(SDL_FPoint *target_point, const Vector2f *v) {
-    target_point->x += v->x;
-    target_point->y += v->y;
-}
-
-Vector2f vector_divi(const Vector2f *v, float divisor) {
+#pragma region Physic
+Vector2f vector_divi(const Vector2f* v, float divisor)
+{
     assert(divisor > 0);
-    Vector2f res = {v->x / divisor, v->y / divisor};
+    Vector2f res = { v->x / divisor, v->y / divisor };
     return res;
 }
 
-/*
+float dot_product(const Vector2f *v1, const Vector2f *v2)
+{
+    app.entities->player->location.x += app.entities->player->velocity.x;
+    app.entities->player->location.y += app.entities->player->velocity.y;
+}
+
 void vector_normalize(Vector2f* v)
 {
-	int x = v->x;
-	int y = (*v).y;
-	return vector_divi(v, sqrt(x * x + y * y));
+    float x = v->x;
+    float y = v->y;
+    assert(sqrtf(x * x + y * y) > 0);
+    (*v) = vector_divi(v, sqrtf(x * x + y * y));
 }
-*/
 
-struct Vector2f grav(int d, int mv, int mp, const int G, const Vector2f *distance) {
-    float F = G * (mv * mp) / (d * d);
-    Vector2f v = {F * distance->x, F * distance->y};
+Vector2f vector_sub(const Vector2f* v1, const Vector2f* v2) {
+    Vector2f v = { v1->x - v2->x, v1->y - v2->y};
     return v;
+}
+
+Vector2f direction_from_fpoint(const SDL_FPoint *p1, const SDL_FPoint *p2)
+{
+    Vector2f v = { p1->x - p2->x,p1->y - p2->y};
+    vector_normalize(&v);
+    return v;
+}
+
+float calculate_distance(const SolarSystem* s) {
+    const SDL_FPoint p_loc = app.entities->player->location;
+    float x1 = p_loc.x;
+    float y1 = p_loc.y;
+
+    float x2 = s->location.x;
+    float y2 = s->location.y;
+
+    return sqrtf((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 
 }
 
-struct Vector2f somme_forces() {
+Vector2f grav_force(const SolarSystem* s, const Vector2f *direction)
+{
+    float mass_player = app.entities->player->mass;
+    float mass_star = s->mass;
+    float dist = calculate_distance(s);
+    float F = GRAVITY_CONST * (mass_player * mass_star) / (dist * dist);
+    Vector2f v = { F * direction->x, F * direction->y };
+    return v ;
+
 }
+
+Vector2f sum_forces(const Vector2f* vector_list, int length)
+{
+    Vector2f res = vector2f_zero;
+
+    for (int i = 0; i < length; ++i)
+    {
+        res = vectorf_add(&res, &vector_list[i]);
+    }
+    return res;
+}
+#pragma endregion // Physic
 
 void physic_update(void) {
     if (check_player_planets_collisions())
-        exit(0);
+        quit(PlayerDied, NULL);
 
     planet_revolution_update();
 
     if (app.simulation_started) {
-        app.entities->player->velocity.x = 1.7f;
-        app.entities->player->velocity.y = 1.00f;
-        apply_player_velocity();
+        apply_forces();
         keep_player_on_screen();
         player_update();
     }
 }
 
-void game_loop(void) {
+void apply_forces() {
+    Player *player = app.entities->player;
+    SolarSystem  **systems = app.entities->solar_systems;
+    Vector2f *list_forces = app.list_forces;
+
+    for (int i = 0; i < app.nb_forces; i++) {
+        Vector2f dir = direction_from_fpoint(&(systems[i]->location), &(player->location));
+        list_forces[i] = grav_force(systems[i], &dir);
+    }
+
+    Vector2f _sum_forces = sum_forces(list_forces, app.nb_forces);
+
+    Vector2f velocity = {
+            (player->direction.x * player->speed),
+            (player->direction.y * player->speed)
+    };
+
+    Vector2f result_sum_forces = vectorf_add(&_sum_forces, &velocity);
+
+    const float speed = sqrtf(
+            (result_sum_forces.x * result_sum_forces.x)
+            + (result_sum_forces.y * result_sum_forces.y)
+    );
+    player->speed =speed;
+
+    vector_normalize(&result_sum_forces);
+    player->direction = result_sum_forces;
+    player->velocity.x = result_sum_forces.x * speed;
+    player->velocity.y = result_sum_forces.y * speed;
+}
+
+void game_loop(float delta_time) {
     physic_update();
+}
+
+void quit(quit_code code, const char* message) {
+        switch (code) {
+            case Error:
+                if (message != NULL)
+                fprintf(stderr, "%s", message);
+                break;
+            case Exit:
+                if (message != NULL)
+                fprintf(stdout, "%s", message);
+                break;
+            case PlayerDied:
+                fprintf(stdout, "%s", "Game Over");
+                break;
+        }
+
+    SDL_DestroyWindow(render_window.sdl_win);
+    SDL_DestroyRenderer(render_window.sdl_renderer);
+    SDL_Quit();
+
+    if (app.entities->end) free(app.entities->end);
+    if (app.entities->player) free(app.entities->player);
+    if (app.entities->solar_systems) free(app.entities->solar_systems);
+    if (app.entities) free(app.entities);
+    if (app.config) free(app.config);
+
+    exit(1);
 }

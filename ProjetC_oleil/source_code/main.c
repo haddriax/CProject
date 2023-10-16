@@ -1,25 +1,11 @@
 #include "vue_controller/vue_controller.h"
 
-int quit_app(int message)
-{
-    SDL_DestroyWindow(render_window.sdl_win);
-    SDL_DestroyRenderer(render_window.sdl_renderer);
-    SDL_Quit();
-
-    if (app.entities->end) free(app.entities->end);
-    if (app.entities->player) free(app.entities->player);
-    if (app.entities->solar_systems) free(app.entities->solar_systems);
-    if (app.entities) free(app.entities);
-    if (app.config) free(app.config);
-
-    return message; // Error code if needed.
-}
-
 // Expected time for a frame, in milliseconds.
 #define TARGET_FRAME_DURATION (1000 / 60)
 
 int main (int argc, char** argv)
 {
+    // Counter to avoid changing the window name each frame.
     int frame_counter_fps_display;
 
     // Remember : await config.txt path to be first user passed argument.
@@ -50,7 +36,7 @@ int main (int argc, char** argv)
         }
 
         // Gameplay update
-        game_loop();
+        game_loop((float)app.delta_time);
 
         // Drawing shapes
         render();
@@ -59,5 +45,6 @@ int main (int argc, char** argv)
         t_end_frame = SDL_GetTicks64();
     }
 
-    return quit_app(0);
+    quit(Exit, NULL);
+    return 0;
 }

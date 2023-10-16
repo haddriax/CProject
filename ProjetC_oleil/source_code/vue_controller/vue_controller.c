@@ -33,7 +33,6 @@ int handle_inputs(void) {
                 break;
         }
     }
-
     return 1;
 }
 
@@ -181,14 +180,12 @@ void render_systems(void) {
         for (int j = 0; j < s->nb_planets; ++j) {
             const Planet *p = &(s->planets[j]);
             assert(p != NULL);
-
             // Draw orbit path
             SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(grey));
             draw_circle(render_window.sdl_renderer,
                         s->location.x,
                         s->location.y,
                         (p->orbit < 0 ? (-p->orbit) : p->orbit));
-
             // Draw Planet
             SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(cyan));
             render_fill_circle(
@@ -208,7 +205,7 @@ void render_player(void) {
                 SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
     }
 
-    // Only if vector length is slightly bigger than zero.
+    // Only if velocity vector approximate length is slightly bigger than zero.
     if (fabsf(p->velocity.x + p->velocity.y) >= 0.05f)
     {
         // Render velocity vector.
@@ -219,34 +216,38 @@ void render_player(void) {
                             (p->location.x + p->velocity.x * 25)  ,
                             (p->location.y + p->velocity.y * 25) );
     }
+}
 
+void render_end(void) {
+    SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
+    SDL_RenderDrawRect(render_window.sdl_renderer,app.entities->end); // Render Goal.
+    // @todo check if offset for center is applied.
+}
+
+void render_border(void) {
+    SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
+    // Border w and h is -20, because it cumulates both the margin and the offset.
+    SDL_Rect border = {10, 10, app.config->window_size.x - 20, app.config->window_size.y - 20};
+}
+
+void render_clear(void) {
+    SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(black));
+    SDL_RenderClear(render_window.sdl_renderer);
 }
 
 void render(void) {
     if (render_window.sdl_renderer != NULL) {
-        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(black));
-        SDL_RenderClear(render_window.sdl_renderer);
-        SDL_UpdateWindowSurface(render_window.sdl_win);
-
-        // Render Border
-        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
-        // Border w and h is -20, because it cumulates both the margin and the offset.
-        SDL_Rect border = {10, 10, app.config->window_size.x - 20, app.config->window_size.y - 20};
-        SDL_RenderDrawRect(render_window.sdl_renderer,
-                           &border); // Render Goal.
-
+        render_clear();
+        render_end();
         render_systems();
-
+        render_border();
         render_player();
-
-        // Render END
-        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
-        SDL_RenderDrawRect(render_window.sdl_renderer,
-                           app.entities->end); // Render Goal. @todo add offset to center it's coord
-
+        // Finalize rendering.
         SDL_RenderPresent(render_window.sdl_renderer);
     } else {
-        fprintf(stderr, "%s\n",
-                "Error in rendering, pointer to SDL_Renderer is NULL.");  // NOLINT(cert-err33-c) - Error Output
+        char error_log[128];
+        sprintf(error_log, "%s\n","Error in rendering, pointer to SDL_Renderer is NULL."); // NOLINT(cert-err33-c) - Error Output
+        quit(-1, error_log);
     }
 }
+
