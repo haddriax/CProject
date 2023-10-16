@@ -75,57 +75,12 @@ typedef struct Vector2f {
 extern const Vector2f vector2f_zero;
 
 /**
- * \brief Integer Vector of Dimension 2; Coordinates x and y.
- */
-typedef struct Vector2i {
-    int x, y;
-} Vector2i;
-extern const Vector2i vector2i_zero;
-
-/**
- * \brief Return a new Vector from the addition of the 2 parameters vectors.
- * \param v1 
- * \param v2 
- * \return New Vector2f from (v1 + v2)
- */
-Vector2i vector_add(const Vector2i *v1, const Vector2i *v2);
-
-/**
  * \brief Return a new Vector from the addition of the 2 parameters vectors.
  * \param v1
  * \param v2
  * \return New Vector2f from (v1 + v2)
  */
 Vector2f vectorf_add(const Vector2f *v1, const Vector2f *v2);
-
-/**
-* \brief Return a new Vector from the substraction of the 2 parameters vectors.
-* \return New Vector2f from (v1 - v2)
-*/
-Vector2i vector_sub(const Vector2i *v1, const Vector2i *v2);
-
-/** @brief: Return the result of the dot product from v1 and v2.
-@return: float (v1.v2)
-*/
-float dot_product(const Vector2i *v1, const Vector2i *v2);
-
-/** @todo !
-@brief: Scale v to a magnitude of 1
-*/
-void vector_normalize(Vector2i *v);
-
-/** @todo !
-@brief: Calculate the length of v. Calcul is heavy.
-@return: Length of v.
-*/
-float vector_length(const Vector2i *v);
-
-/**
-* @todo !
-* @brief: Calculate the (length*length) of v. Use it for comparison over vector_length
-* @return: Length of v.
-*/
-float vector_length_squared(const Vector2i *v);
 
 #pragma endregion
 
@@ -182,9 +137,9 @@ typedef struct Entities {
 
 /** @brief: Contain the data from the Config.txt file on disk */
 typedef struct Config {
-    Vector2i window_size;
     SDL_FPoint player_start;
     SDL_FPoint goal_end;
+    SDL_FPoint window_size;
     int nb_solar_systems;
     int player_size;
 
@@ -300,13 +255,6 @@ int validate_config_line(const char *data, const config_type t);
 void process_data(const char *data, const config_type type, FILE *file, int *line_index);
 
 /**
- * \brief Read a Vector2i from a char*. X and Y values must be separated by a space.
- * \param data Input data
- * \return Resulting Vector2i
- */
-Vector2i read_vector(const char *data);
-
-/**
  * \brief Read a SDL_FPoint from a char*. X and Y values must be INTEGERS and separated by a space.
  * \note Config can only store Int, so this function expects to find Integers and cast them to floats.
  * \param data Input data
@@ -340,7 +288,7 @@ int read_signed_int(const char *data);
  * \param spawn_location
  * \return Pointer to newly created SolarSystem
  */
-SolarSystem *build_system(FILE *file, int *line_index, Vector2i spawn_location);
+SolarSystem *build_system(FILE *file, int *line_index, SDL_FPoint spawn_location);
 
 /**
  * \brief Generate a new Planet, located on its orbit at t=0
@@ -394,6 +342,8 @@ int check_player_planets_collisions(void);
 void physic_update(void);
 
 void game_loop(void);
+
+void quit_app(int code, char* message);
 
 #endif //PROJECTC_OLEIL_MODEL_H
 

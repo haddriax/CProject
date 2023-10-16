@@ -1,7 +1,6 @@
 #include "model.h"
 
 // Default variable for easy [0;0] vector creation by copy.
-const Vector2i vector2i_zero = {0, 0};
 const Vector2f vector2f_zero = {0.f, 0.f};
 
 // Global container for the app.
@@ -26,9 +25,9 @@ Config *load_config(const char *file_name) {
         const errno_t e = fopen_s(&file, file_name, FILE_MODE_READONLY);
         if (e || (!file)) // ERROR HANDLING - OPENING FAILED.
         {
-            fprintf(stderr, "Error when opening config file [%s]: %s\n", file_name,
-                    strerror(e));  // NOLINT(cert-err33-c) - Error Output
-            abort();
+            char b[64];
+            sprintf(b, "Error when opening config file [%s]: %s\n", file_name, strerror(e));
+            quit_app(-1, b);
         }
 
         // Read from file.
@@ -201,7 +200,7 @@ int validate_config_line(const char *data, const config_type t) {
 void process_data(const char *data, const config_type type, FILE *file, int *line_index) {
     switch (type) {
         case window_size:
-            app.config->window_size = read_vector(data);
+            app.config->window_size = read_float_point(data);
 #if PRINT_CONFIG_CREATION
             printf("Window size set to %i:%i\n", app.config->window_size.x, app.config->window_size.y);
 #endif
@@ -222,13 +221,14 @@ void process_data(const char *data, const config_type type, FILE *file, int *lin
             app.config->nb_solar_systems = read_int(data);
             app.entities->nb_solar_systems = app.config->nb_solar_systems;
             app.entities->solar_systems = malloc(app.config->nb_solar_systems * sizeof(SolarSystem));
+			
             assert(app.entities->solar_systems != NULL);
 #if PRINT_CONFIG_CREATION
             printf("Number of systems set to %i\n", app.config->nb_solar_systems);
 #endif
             break;
         case star_pos:
-            build_system(file, line_index, read_vector(data));
+            build_system(file, line_index, read_float_point(data));
             break;
         case star_radius:
         case nb_planet:
@@ -239,7 +239,7 @@ void process_data(const char *data, const config_type type, FILE *file, int *lin
     }
 }
 
-Vector2i read_vector(const char *data) {
+Vector2f read_vector(const char *data) {
     // Find space separating x and y value
     int char_index = 0;
     while (data[char_index] != SEPARATOR_SPACE && char_index < CONFIG_BUFFER_MAX_SIZE)
@@ -264,7 +264,7 @@ Vector2i read_vector(const char *data) {
     const int x_coords = SDL_atoi(x);
     const int y_coords = SDL_atoi(y);
 
-    const Vector2i v = {x_coords, y_coords};
+    const Vector2f v = { (float) x_coords, (float) y_coords};
     return v;
 }
 
@@ -279,7 +279,7 @@ SDL_FPoint read_float_point(const char *data) {
     // Get char until separator index is found.
     char x[8];
     int i = 0;
-    for (; i < char_index - 1; ++i)
+    for (; i < char_index; ++i)
         x[i] = data[i];
     x[i + 1] = '\0';
 
@@ -333,7 +333,7 @@ int read_signed_int(const char *data) {
     return return_value;
 }
 
-SolarSystem *build_system(FILE *file, int *line_index, Vector2i spawn_location) {
+SolarSystem *build_system(FILE *file, int *line_index, Vector2f spawn_location) {
     char line[64];
     static int creation_id = 0;
     // Create new system.
@@ -555,29 +555,11 @@ void init_render_window(const int width, const int height, const char *name) {
     }
 }
 
-Vector2i vector_add(const Vector2i *v1, const Vector2i *v2) {
-    Vector2i vec;
-    vec.x = (v1->x + v2->x);
-    vec.y = (v1->y + v2->y);
-    return vec;
-}
-
 Vector2f vectorf_add(const Vector2f *v1, const Vector2f *v2) {
     Vector2f vec;
     vec.x = (v1->x + v2->x);
     vec.y = (v1->y + v2->y);
     return vec;
-}
-
-Vector2i vector_sub(const Vector2i *v1, const Vector2i *v2) {
-    Vector2i vec;
-    vec.x = (v1->x - v2->x);
-    vec.y = (v1->y - v2->y);
-    return vec;
-}
-
-float dot_product(const Vector2i *v1, const Vector2i *v2) {
-    return (float) ((v1->x * v2->x) + (v1->y * v2->y));
 }
 
 int is_colliding_rect_circle(const SDL_FRect *rect, const SDL_FPoint *location, int radius) {
@@ -675,12 +657,16 @@ void forces_applied(void)
 }
 
 void physic_update(void) {
-    if (check_player_planets_collisions())
-        exit(0);
+
+    //if (check_player_planets_collisions())
+       //  exit(0);
 
     planet_revolution_update();
 
     if (app.simulation_started) {
+
+
+
         apply_player_velocity();
         keep_player_on_screen();
         player_update();
@@ -689,4 +675,20 @@ void physic_update(void) {
 
 void game_loop(void) {
     physic_update();
+}
+
+void quit_app(int code, char* message)
+{
+    if (code == -1)
+        fprintf(stderr, "ERROR:%s", message);
+
+    SDL_DestroyWindow(render_window.sdl_win);
+    SDL_DestroyRenderer(render_window.sdl_renderer);
+    SDL_Quit();
+
+    if (app.entities->end) free(app.entities->end);
+    if (app.entities->player) free(app.entities->player);
+    if (app.entities->solar_systems) free(app.entities->solar_systems);
+    if (app.entities) free(app.entities);
+    if (app.config) free(app.config);
 }
