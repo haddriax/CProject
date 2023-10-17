@@ -26,9 +26,9 @@ Config *load_config(const char *file_name) {
         const errno_t e = fopen_s(&file, file_name, FILE_MODE_READONLY);
         if (e || (!file)) // ERROR HANDLING - OPENING FAILED.
         {
-            fprintf(stderr, "Error when opening config file [%s]: %s\n", file_name,
-                    strerror(e));  // NOLINT(cert-err33-c) - Error Output
-            abort();
+            char buffer[128];
+            sprintf(buffer, "Error when opening config file [%s]: %s\n", file_name, strerror(e));
+            quit(Error, buffer);
         }
 
         // Read from file.
@@ -86,8 +86,9 @@ int find_config_line_name(const char *line, char *out_config_name) {
         ++char_index;
 
     if (char_index == (CONFIG_BUFFER_MAX_SIZE - 1)) {
-        fprintf(stderr, "%s\n", "Config name not valid.");  // NOLINT(cert-err33-c) - Error Output
-        abort();
+        char buffer[128];
+        sprintf(buffer, "%s\n", "Config name not valid.");
+        quit(Error, buffer);
     }
 
     // Once done, copy the data from beginning to separator into the argument char*
@@ -130,8 +131,9 @@ char *get_data_from_line(const char *line, const int data_start) {
         SDL_memcpy(data, &line[data_start], data_length); // Copy line data
         data[data_length] = '\0'; // Add the end of string character
     } else {
-        fprintf(stderr, "%s: %s\n", line, "could not copy data from configs.");  // NOLINT(cert-err33-c) - Error Output
-        abort();
+        char buffer[128];
+        sprintf(buffer, "%s: %s\n", line, "could not copy data from configs.");
+        quit(Error, buffer);
     }
 
     return data;
