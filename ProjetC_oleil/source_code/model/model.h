@@ -37,7 +37,7 @@
 
 #define COLOR_PARAMS(x) (x).r, (x).g, (x).b, (x).a
 
-#define GRAVITY_CONST 10.0f
+#define GRAVITY_CONST 1000.0f
 
 #define CONFIG_BUFFER_MAX_SIZE 32
 #define PLAYER_SIZE 10
@@ -80,14 +80,6 @@ typedef struct Vector2f {
     float x, y;
 } Vector2f;
 extern const Vector2f vector2f_zero;
-
-/**
- * \brief Integer Vector of Dimension 2; Coordinates x and y.
- */
-typedef struct Vector2i {
-    int x, y;
-} Vector2i;
-extern const Vector2i vector2i_zero;
 
 #pragma endregion
 
@@ -137,7 +129,7 @@ typedef struct Entities {
 
 /** @brief: Contain the data from the Config.txt file on disk */
 typedef struct Config {
-    Vector2i window_size;
+    Vector2f window_size;
     SDL_FPoint player_start;
     SDL_FPoint goal_end;
     int nb_solar_systems;
@@ -252,11 +244,11 @@ int validate_config_line(const char *data, config_type t);
 void process_data(const char *data, config_type type, FILE *file, int *line_index);
 
 /**
- * \brief Read a Vector2i from a char*. X and Y values must be separated by a space.
+ * \brief Read a Vector2f from a char*. X and Y values must be separated by a space.
  * \param data Input data
- * \return Resulting Vector2i
+ * \return Resulting Vector2f
  */
-Vector2i read_vector(const char *data);
+Vector2f read_vector(const char *data);
 
 /**
  * \brief Read a SDL_FPoint from a char*. X and Y values must be INTEGERS and separated by a space.
@@ -292,7 +284,7 @@ int read_signed_int(const char *data);
  * \param spawn_location
  * \return Pointer to newly created SolarSystem
  */
-SolarSystem *build_system(FILE *file, int *line_index, Vector2i spawn_location);
+SolarSystem *build_system(FILE *file, int *line_index, Vector2f spawn_location);
 
 /**
  * \brief Generate a new Planet, located on its orbit at t=0
@@ -302,7 +294,7 @@ SolarSystem *build_system(FILE *file, int *line_index, Vector2i spawn_location);
  * \param index creation index (id in entities list)
  * \return Pointer to newly created Planet
  */
-Planet *build_planet(SolarSystem *parent_system, int orbit, int radius, int index);
+Planet *build_planet(SolarSystem *parent_system, float orbit, float radius, int index);
 
 /**
  * \brief Initialize application, reading config file 
