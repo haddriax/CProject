@@ -6,7 +6,7 @@
 int main (int argc, char** argv)
 {
     // Counter to avoid changing the window name each frame.
-    int frame_counter_fps_display;
+    int frame_counter_fps_display = 0;
 
     // Remember : await config.txt path to be first user passed argument.
     init_app(argc, argv);

@@ -1,7 +1,6 @@
 #include "model.h"
 
 // Default variable for easy [0;0] vector creation by copy.
-const Vector2i vector2i_zero = {0, 0};
 const Vector2f vector2f_zero = {0.f, 0.f};
 
 // Global container for the app.
@@ -149,7 +148,7 @@ int validate_is_int(const char *data) {
 }
 
 int validate_is_signed_int(const char *data) {
-    size_t i;
+    size_t i = 0;
     // Check if first char is the sign
     if (data[0] == '-')
         i = 1;
@@ -243,7 +242,7 @@ void process_data(const char *data, const config_type type, FILE *file, int *lin
     }
 }
 
-Vector2i read_vector(const char *data) {
+Vector2f read_vector(const char *data) {
     // Find space separating x and y value
     int char_index = 0;
     while (data[char_index] != SEPARATOR_SPACE && char_index < CONFIG_BUFFER_MAX_SIZE)
@@ -265,10 +264,10 @@ Vector2i read_vector(const char *data) {
         y[j] = data[(char_index + 1) + j];
     y[j + 1] = '\0';
 
-    const int x_coords = SDL_atoi(x);
-    const int y_coords = SDL_atoi(y);
+    const float x_coords = SDL_atoi(x);
+    const float y_coords = SDL_atoi(y);
 
-    const Vector2i v = {x_coords, y_coords};
+    const Vector2f v = {x_coords, y_coords};
     return v;
 }
 
@@ -337,7 +336,7 @@ int read_signed_int(const char *data) {
     return return_value;
 }
 
-SolarSystem *build_system(FILE *file, int *line_index, Vector2i spawn_location) {
+SolarSystem *build_system(FILE *file, int *line_index, Vector2f spawn_location) {
     char line[64];
     static int creation_id = 0;
     // Create new system.
@@ -421,7 +420,7 @@ SolarSystem *build_system(FILE *file, int *line_index, Vector2i spawn_location) 
     return (app.entities->solar_systems[creation_id++]);
 }
 
-Planet *build_planet(SolarSystem *parent_system, const int orbit, const int radius, const int index) {
+Planet *build_planet(SolarSystem *parent_system, const float orbit, const float radius, const int index) {
     assert(parent_system);
     Planet *p = &(parent_system->planets[index]);
     if (p) {
@@ -729,6 +728,7 @@ void apply_forces() {
 
     for (int i = 0; i < app.nb_forces; i++) {
         Vector2f dir = direction_from_fpoint(&(systems[i]->location), &(player->location));
+        // Vector2f dir = direction_from_fpoint(&(player->location) , &(systems[i]->location)); // Feature, not a bug.
         list_forces[i] = grav_force(systems[i], &dir);
     }
 
