@@ -175,9 +175,9 @@ void render_systems(void) {
         SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(yellow));
         render_fill_circle(
                 render_window.sdl_renderer,
-                s->location.x,
-                s->location.y,
-                s->radius);
+                (int) s->location.x,
+                (int)  s->location.y,
+                (int) s->radius);
 
         // Render Planets & orbits
         for (int j = 0; j < s->nb_planets; ++j) {
@@ -186,16 +186,16 @@ void render_systems(void) {
             // Draw orbit path
             SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(grey));
             draw_circle(render_window.sdl_renderer,
-                        s->location.x,
-                        s->location.y,
-                        (p->orbit < 0 ? (-p->orbit) : p->orbit));
+                        (int) s->location.x,
+                        (int) s->location.y,
+                        (int) (p->orbit < 0 ? (-p->orbit) : p->orbit));
             // Draw Planet
             SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(cyan));
             render_fill_circle(
                     render_window.sdl_renderer,
                     (int) p->location.x,
                     (int) p->location.y,
-                    p->radius);
+                    (int) p->radius);
         }
     }
 }
@@ -230,7 +230,8 @@ void render_end(void) {
 void render_border(void) {
     SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
     // Border w and h is -20, because it cumulates both the margin and the offset.
-    SDL_Rect border = {10, 10, app.config->window_size.x - 20, app.config->window_size.y - 20};
+    SDL_Rect border = {10, 10, (int) app.config->window_size.x - 20, (int) app.config->window_size.y - 20};
+    SDL_RenderDrawRect(render_window.sdl_renderer,&border); // Render Goal.
 }
 
 void render_clear(void) {
@@ -250,7 +251,7 @@ void render(void) {
     } else {
         char error_log[128];
         sprintf(error_log, "%s\n","Error in rendering, pointer to SDL_Renderer is NULL."); // NOLINT(cert-err33-c) - Error Output
-        quit(-1, error_log);
+        quit(Error, error_log);
     }
 }
 
