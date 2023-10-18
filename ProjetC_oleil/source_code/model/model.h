@@ -15,6 +15,7 @@
 #include <assert.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 #define PRINT_CONFIG_CREATION 0
 
@@ -37,7 +38,10 @@
 
 #define COLOR_PARAMS(x) (x).r, (x).g, (x).b, (x).a
 
-#define GRAVITY_CONST 1000.0f
+#define INITIAL_SPEED 4.f
+#define GRAVITY_CONST 1.0f
+#define MAX_SPEED_VALUE 8.0f
+#define MIN_SPEED_VALUE 2.0f
 
 #define CONFIG_BUFFER_MAX_SIZE 32
 #define PLAYER_SIZE 10
@@ -340,6 +344,11 @@ void planet_revolution_update(void);
  */
 int check_player_planets_collisions(void);
 
+/** @todo Write documentation
+ * \brief 
+ */
+void start_simulation(void);
+
 /**
  * \brief Compute physic (forces and movement) and apply new position to entities each frames.
  */
@@ -383,7 +392,7 @@ Vector2f vector_sub(const Vector2f* v1, const Vector2f* v2);
  */
 Vector2f vectorf_add(const Vector2f *v1, const Vector2f *v2);
 
-Vector2f direction_from_fpoint(const SDL_FPoint *p1, const SDL_FPoint *p2);
+Vector2f direction_from_FPoint(const SDL_FPoint *p1, const SDL_FPoint *p2);
 
 /**
  *  \brief Returns the distance btw a star and the ship;

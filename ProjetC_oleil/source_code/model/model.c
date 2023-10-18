@@ -614,7 +614,7 @@ void clamp_vector(Vector2f* v, float min, float max)
 {
     assert(min > 0 && max > min && v != NULL);
     const float mag_squared = v->x * v->x + v->y * v->y;
-
+    // @todo : fix clamp.
     const float mag_clamped = (mag_squared < min ? (min * min) : mag_squared) > max ? (max * max) : mag_squared;
 
     if (fabsf(mag_squared - mag_clamped) > 0.001f) // 0.001f to account for float comparison inaccuracy.
@@ -664,7 +664,7 @@ int check_player_planets_collisions(void) {
 Vector2f vector_divi(const Vector2f* v, float divisor)
 {
     assert(divisor > 0);
-    Vector2f res = { v->x / divisor, v->y / divisor };
+    const Vector2f res = { v->x / divisor, v->y / divisor };
     return res;
 }
 
@@ -676,18 +676,18 @@ float dot_product(const Vector2f *v1, const Vector2f *v2)
 
 void vector_normalize(Vector2f* v)
 {
-    float x = v->x;
-    float y = v->y;
+	const float x = v->x;
+	const float y = v->y;
     assert(sqrtf(x * x + y * y) > 0);
     (*v) = vector_divi(v, sqrtf(x * x + y * y));
 }
 
 Vector2f vector_sub(const Vector2f* v1, const Vector2f* v2) {
-    Vector2f v = { v1->x - v2->x, v1->y - v2->y};
+	const Vector2f v = { v1->x - v2->x, v1->y - v2->y};
     return v;
 }
 
-Vector2f direction_from_fpoint(const SDL_FPoint *p1, const SDL_FPoint *p2)
+Vector2f direction_from_FPoint(const SDL_FPoint *p1, const SDL_FPoint *p2)
 {
     Vector2f v = { p1->x - p2->x,p1->y - p2->y};
     vector_normalize(&v);
@@ -696,11 +696,11 @@ Vector2f direction_from_fpoint(const SDL_FPoint *p1, const SDL_FPoint *p2)
 
 float calculate_distance(const SolarSystem* s) {
     const SDL_FPoint p_loc = app.entities->player->location;
-    float x1 = p_loc.x;
-    float y1 = p_loc.y;
+    const float x1 = p_loc.x;
+    const float y1 = p_loc.y;
 
-    float x2 = s->location.x;
-    float y2 = s->location.y;
+    const float x2 = s->location.x;
+    const float y2 = s->location.y;
 
     return sqrtf((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 
@@ -708,16 +708,16 @@ float calculate_distance(const SolarSystem* s) {
 
 Vector2f grav_force(const SolarSystem* s, const Vector2f *direction)
 {
-    float mass_player = app.entities->player->mass;
-    float mass_star = s->mass;
-    float dist = calculate_distance(s);
-    float F = GRAVITY_CONST * (mass_player * mass_star) / (dist * dist);
-    Vector2f v = { F * direction->x, F * direction->y };
+	const float mass_player = app.entities->player->mass;
+	const float mass_star = s->mass;
+	const float dist = calculate_distance(s);
+	const float F = GRAVITY_CONST * (mass_player * mass_star) / (dist * dist);
+	const Vector2f v = { F * direction->x, F * direction->y };
     return v ;
 
 }
 
-Vector2f sum_forces(const Vector2f* vector_list, int length)
+Vector2f sum_forces(const Vector2f* vector_list, const int length)
 {
     Vector2f res = vector2f_zero;
 
@@ -727,6 +727,28 @@ Vector2f sum_forces(const Vector2f* vector_list, int length)
     }
     return res;
 }
+
+void start_simulation(void)
+{
+    // Create random seed based on current time.
+    srand((unsigned int)time(NULL));  // NOLINT(cert-msc51-cpp) // Doesn't mind if this is predictable.
+
+    // Create a random value in [0.00f;1.00f]
+    const float s = ((float) (rand() % 2) / 10) + ( (float) (rand() % 100) / 100);  // NOLINT(concurrency-mt-unsafe)
+
+    // const float initial_speed = 2.f + (float) (rand() % 6); // For a random initial speed  // NOLINT(concurrency-mt-unsafe)
+
+    // Create initial velocity, using <s> to get 2 float which added gives 1.0.
+    // Then reverse direction by multiplying it by 1 or -1, depending of a random value.
+    Vector2f initial_velocity;
+    initial_velocity.x = s * INITIAL_SPEED * (rand() % 2 == 0 ? -1.f : 1.f);  // NOLINT(concurrency-mt-unsafe)
+    initial_velocity.y = (1 - s) * INITIAL_SPEED * (rand() % 2 == 0 ? -1.f : 1.f);  // NOLINT(concurrency-mt-unsafe)
+
+    // Apply our velocity to the Player.
+    app.entities->player->velocity = initial_velocity;
+    // Start simulation. i.e. Player will now be affected by Gravity and by it's own velocity.
+    app.simulation_started = 1;
+}   
 
 void physic_update(void) {
     if (check_player_planets_collisions())
@@ -741,20 +763,20 @@ void physic_update(void) {
     }
 }
 
-void apply_forces() {
+void apply_forces(void) {
     Player *player = app.entities->player;
     SolarSystem  **systems = app.entities->solar_systems;
     Vector2f *list_forces = app.list_forces;
 
     for (int i = 0; i < app.nb_forces; i++) {
-        Vector2f dir = direction_from_fpoint(&(systems[i]->location), &(player->location));
-        // Vector2f dir = direction_from_fpoint(&(player->location) , &(systems[i]->location)); // Feature, not a bug.
+        Vector2f dir = direction_from_FPoint(&(systems[i]->location), &(player->location));
+        // Vector2f dir = direction_from_FPoint(&(player->location) , &(systems[i]->location)); // Feature, not a bug.
         list_forces[i] = grav_force(systems[i], &dir);
     }
 
-    Vector2f _sum_forces = sum_forces(list_forces, app.nb_forces);
+    const Vector2f _sum_forces = sum_forces(list_forces, app.nb_forces);
 
-    Vector2f velocity = {
+    const Vector2f velocity = {
             (player->direction.x * player->speed),
             (player->direction.y * player->speed)
     };
@@ -769,8 +791,10 @@ void apply_forces() {
 
     vector_normalize(&result_sum_forces);
     player->direction = result_sum_forces;
-    player->velocity.x = result_sum_forces.x * speed;
-    player->velocity.y = result_sum_forces.y * speed;
+    player->velocity.x += result_sum_forces.x * speed;
+    player->velocity.y += result_sum_forces.y * speed;
+
+    // clamp_vector(&player->velocity, MIN_SPEED_VALUE, MAX_SPEED_VALUE); // @todo FIX ME
 }
 #pragma endregion // Physic
 
@@ -778,7 +802,7 @@ void game_loop(float delta_time) {
     physic_update();
 }
 
-void quit(quit_code code, const char* message) {
+void quit(const quit_code code, const char* message) {
         switch (code) {
             case Error:
                 if (message != NULL)
@@ -807,5 +831,5 @@ void quit(quit_code code, const char* message) {
     if (app.entities) free(app.entities);
     if (app.config) free(app.config);
 
-    exit(1);
+    exit(1);  // NOLINT(concurrency-mt-unsafe)
 }
