@@ -25,9 +25,9 @@ Config *load_config(const char *file_name) {
         const errno_t e = fopen_s(&file, file_name, FILE_MODE_READONLY);
         if (e || (!file)) // ERROR HANDLING - OPENING FAILED.
         {
-            fprintf(stderr, "Error when opening config file [%s]: %s\n", file_name,
-                    strerror(e));  // NOLINT(cert-err33-c) - Error Output
-            abort();
+            char buffer[128];
+            sprintf(buffer, "Error when opening config file [%s]: %s\n", file_name, strerror(e));
+            quit(Error, buffer);
         }
 
         // Read from file.
@@ -85,8 +85,9 @@ int find_config_line_name(const char *line, char *out_config_name) {
         ++char_index;
 
     if (char_index == (CONFIG_BUFFER_MAX_SIZE - 1)) {
-        fprintf(stderr, "%s\n", "Config name not valid.");  // NOLINT(cert-err33-c) - Error Output
-        abort();
+        char buffer[128];
+        sprintf(buffer, "%s\n", "Config name not valid.");
+        quit(Error, buffer);
     }
 
     // Once done, copy the data from beginning to separator into the argument char*
@@ -129,8 +130,9 @@ char *get_data_from_line(const char *line, const int data_start) {
         SDL_memcpy(data, &line[data_start], data_length); // Copy line data
         data[data_length] = '\0'; // Add the end of string character
     } else {
-        fprintf(stderr, "%s: %s\n", line, "could not copy data from configs.");  // NOLINT(cert-err33-c) - Error Output
-        abort();
+        char buffer[128];
+        sprintf(buffer, "%s: %s\n", line, "could not copy data from configs.");
+        quit(Error, buffer);
     }
 
     return data;
@@ -264,8 +266,8 @@ Vector2f read_vector(const char *data) {
         y[j] = data[(char_index + 1) + j];
     y[j + 1] = '\0';
 
-    const float x_coords = SDL_atoi(x);
-    const float y_coords = SDL_atoi(y);
+    const float x_coords = (float) SDL_atoi(x);
+    const float y_coords = (float) SDL_atoi(y);
 
     const Vector2f v = {x_coords, y_coords};
     return v;
@@ -463,8 +465,9 @@ void keep_player_on_screen(void) {
 
 void init_app(const int n_args, char **argv) {
     if (n_args < 1) {
-        fprintf(stderr, "No config file argument detected.");  // NOLINT(cert-err33-c)
-        abort();
+        char error_log[128];
+        sprintf(error_log, "%s\n", "No config file argument detected."); // NOLINT(cert-err33-c) - Error Output
+        quit(Error, error_log);
     }
 
     Entities *entities_ptr = (Entities *) malloc(sizeof(Entities));
@@ -503,7 +506,7 @@ void init_app(const int n_args, char **argv) {
     }
 
     //Create and initialize display.
-    init_render_window(app.config->window_size.x, app.config->window_size.y, APP_DEFAULT_NAME);
+    init_render_window((int) app.config->window_size.x, (int) app.config->window_size.y, APP_DEFAULT_NAME);
 
     assert(app.config != NULL);
     assert(app.entities != NULL);
@@ -762,7 +765,7 @@ void apply_forces() {
             (result_sum_forces.x * result_sum_forces.x)
             + (result_sum_forces.y * result_sum_forces.y)
     );
-    player->speed =speed;
+    player->speed = speed;
 
     vector_normalize(&result_sum_forces);
     player->direction = result_sum_forces;
