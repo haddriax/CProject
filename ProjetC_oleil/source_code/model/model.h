@@ -323,6 +323,13 @@ void keep_player_on_screen(void);
 void player_update(void);
 
 /**
+ * \brief Reading the Input flags, accelerate the player.
+ */
+void handle_move_input(void);
+
+void clamp_vector(Vector2f* v, float min, float max);
+
+/**
  * \brief Update the planets location.
  */
 void planet_revolution_update(void);
@@ -337,6 +344,30 @@ int check_player_planets_collisions(void);
  * \brief Compute physic (forces and movement) and apply new position to entities each frames.
  */
 void physic_update(void);
+
+/** @todo Write documentation.
+ * \brief 
+ * \param v 
+ * \param divisor 
+ * \return 
+ */
+Vector2f vector_divi(const Vector2f* v, float divisor);
+
+/** @todo Write documentation.
+ * \brief 
+ * \param v1 
+ * \param v2 
+ * \return 
+ */
+float dot_product(const Vector2f* v1, const Vector2f* v2);
+
+/** @todo Write documentation.
+ * \brief 
+ * \param v 
+ * \param divisor 
+ * \return 
+ */
+Vector2f vector_divi(const Vector2f* v, float divisor);
 
 /**
 * \brief Return a new Vector from the difference of the 2 parameters vectors.

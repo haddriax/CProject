@@ -603,6 +603,23 @@ void player_update(void) {
     r->y = app.entities->player->location.y - (PLAYER_SIZE / 2.f);
 }
 
+void handle_move_input()
+{
+}
+
+void clamp_vector(Vector2f* v, float min, float max)
+{
+    assert(min > 0 && max > min && v != NULL);
+    const float mag_squared = v->x * v->x + v->y * v->y;
+
+    const float mag_clamped = (mag_squared < min ? (min * min) : mag_squared) > max ? (max * max) : mag_squared;
+
+    if (fabsf(mag_squared - mag_clamped) > 0.001f) // 0.001f to account for float comparison inaccuracy.
+    {
+        (*v) = vector_divi(v, sqrtf(mag_clamped));
+    }
+}
+
 void planet_revolution_update(void) {
     static float simulated_time_D = 0.0f;
     simulated_time_D += (float) app.delta_time / 1000;
