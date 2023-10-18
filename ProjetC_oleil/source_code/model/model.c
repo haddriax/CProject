@@ -326,9 +326,10 @@ int read_signed_int(const char *data) {
     for (; i < (data_length); ++i) {
         if (!SDL_isalnum((int) data[i])) {
             if (data[i] != SEPARATOR_SUBSTRACT) {
-                fprintf(stderr, "Could not read [%s] from config, expected an Int.",
-                        data);  // NOLINT(cert-err33-c) - Error Output
-                abort();
+
+                char buffer[128];
+                sprintf(buffer, "Could not read [%s] from config, expected an Int.", data);
+                quit(Error, buffer);
             }
         }
     }
@@ -530,34 +531,32 @@ void init_render_window(const int width, const int height, const char *name) {
     render_window.sdl_renderer = NULL;
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        fprintf(stderr, " 1 SDL could not initialize! SDL_Error: %s\n",
-                SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
-        abort();
+        char buffer[128];
+        sprintf(buffer, "1 SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+        quit(Error, buffer);
     } else {
-        SDL_Window *window = render_window.sdl_win = SDL_CreateWindow(name, SDL_WINDOWPOS_CENTERED,
-                                                                      SDL_WINDOWPOS_CENTERED, width, height,
-                                                                      SDL_WINDOW_SHOWN);
+        SDL_Window *window = render_window.sdl_win = 
+            SDL_CreateWindow(name, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,SDL_WINDOW_SHOWN);
 
         if (window == NULL) {
-            fprintf(stderr, "2 SDL could not initialize! SDL_CreateWindow returned NULL: %s\n",
-                    SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
-            abort();
+            char buffer[128];
+            sprintf(buffer, "2 SDL could not initialize!SDL_CreateWindow returned NULL : %s\n", SDL_GetError());
+            quit(Error, buffer);
         }
 
         const SDL_Renderer *renderer = render_window.sdl_renderer = SDL_CreateRenderer(window, -1,
                                                                                        SDL_RENDERER_SOFTWARE);
         if (renderer == NULL) {
-            fprintf(stderr, "3 SDL could not initialize! SDL_CreateRenderer returned NULL:%s\n",
-                    SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
-            abort();
+            char buffer[128];
+            sprintf(buffer, "3 SDL could not initialize! SDL_CreateRenderer returned NULL:%s\n", SDL_GetError());
+            quit(Error, buffer);
         }
 
         const SDL_Surface *surface = render_window.sdl_surface = SDL_GetWindowSurface(window);
         if (surface == NULL) {
-            fprintf(stderr, "4 SDL could not initialize! SDL_GetWindowSurface returned NULL: %s\n",
-                    SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
-
-            abort();
+            char buffer[128];
+            sprintf(buffer, "4 SDL could not initialize! SDL_GetWindowSurface returned NULL: %s\n", SDL_GetError());
+            quit(Error, buffer);
         }
     }
 }
@@ -613,19 +612,21 @@ void handle_move_input()
 void clamp_vector(Vector2f* v, float min, float max)
 {
     assert(min > 0 && max > min && v != NULL);
-    const float mag_squared = v->x * v->x + v->y * v->y;
-    // @todo : fix clamp.
-    const float mag_clamped = (mag_squared < min ? (min * min) : mag_squared) > max ? (max * max) : mag_squared;
+    float magnitude = sqrtf(v->x * v->x + v->y * v->y);
 
-    if (fabsf(mag_squared - mag_clamped) > 0.001f) // 0.001f to account for float comparison inaccuracy.
-    {
-        (*v) = vector_divi(v, sqrtf(mag_clamped));
+    if (magnitude < min) {
+        v->x = v->x * min / magnitude;
+        v->y = v->y * min / magnitude;
+    }
+    else if (magnitude > max) {
+        v->x = v->x * max / magnitude;
+        v->y = v->y * max / magnitude;
     }
 }
 
 void planet_revolution_update(void) {
-    static float simulated_time_D = 0.0f;
-    simulated_time_D += (float) app.delta_time / 1000;
+    static float simulated_time = 0.0f;
+    simulated_time += (float) app.delta_time / 1000;
 
     for (int i = 0; i < app.entities->nb_solar_systems; ++i) {
         for (int j = 0; j < app.entities->solar_systems[i]->nb_planets; ++j) {
@@ -633,10 +634,10 @@ void planet_revolution_update(void) {
 
             const float tr = p->radius;
             p->location.x = p->parent_system->location.x +
-                            cosf(simulated_time_D * (float) (tr / (2 * M_PI)) * (p->orbit < 0 ? -1.f : 1.f)
+                            cosf(simulated_time * (float) ((2 * M_PI) / tr) * (p->orbit < 0 ? -1.f : 1.f)
                             ) * p->orbit;
             p->location.y = p->parent_system->location.y +
-                            sinf(simulated_time_D * (float) (tr / (2 * M_PI)) * (p->orbit < 0 ? -1.f : 1.f)
+                            sinf(simulated_time * (float) ((2 * M_PI) / tr) * (p->orbit < 0 ? -1.f : 1.f)
                             ) * p->orbit;
         }
     }
@@ -751,12 +752,13 @@ void start_simulation(void)
 }   
 
 void physic_update(void) {
-    if (check_player_planets_collisions())
-        quit(PlayerDied, NULL);
 
     planet_revolution_update();
 
     if (app.simulation_started) {
+        if (check_player_planets_collisions())
+            quit(PlayerDied, NULL);
+
         apply_forces();
         keep_player_on_screen();
         player_update();
@@ -794,11 +796,17 @@ void apply_forces(void) {
     player->velocity.x += result_sum_forces.x * speed;
     player->velocity.y += result_sum_forces.y * speed;
 
-    // clamp_vector(&player->velocity, MIN_SPEED_VALUE, MAX_SPEED_VALUE); // @todo FIX ME
+    clamp_vector(&player->velocity, MIN_SPEED_VALUE, MAX_SPEED_VALUE);
 }
 #pragma endregion // Physic
 
 void game_loop(float delta_time) {
+    if (key_flags.left)
+        on_left_arrow();
+    if (key_flags.right)
+        on_right_arrow();
+
+
     physic_update();
 }
 
@@ -832,4 +840,17 @@ void quit(const quit_code code, const char* message) {
     if (app.config) free(app.config);
 
     exit(1);  // NOLINT(concurrency-mt-unsafe)
+}
+
+void on_left_arrow(void)
+{
+    float delta_t = ((float) app.delta_time / 1000);
+    Vector2f* velocity = &(app.entities->player->velocity);
+    velocity->x += velocity->x * cosf((float) (M_PI / 100)) - velocity->y * sinf((float) (M_PI / 100));
+    velocity->y += velocity->x * cosf((float) (M_PI / 100)) + velocity->y * sinf((float) (M_PI / 100));
+}
+
+void on_right_arrow(void)
+{
+
 }

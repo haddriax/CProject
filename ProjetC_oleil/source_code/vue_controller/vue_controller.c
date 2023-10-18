@@ -203,22 +203,39 @@ void render_systems(void) {
 
 void render_player(void) {
     Player* p = app.entities->player;
-    SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
-    if (SDL_RenderFillRectF(render_window.sdl_renderer, &(p->draw_rect)) == -1) {
-        fprintf(stderr, "%s: %s\n", "SDL could not render Player.",
-                SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
-    }
 
     // Only if velocity vector approximate length is slightly bigger than zero.
     if (fabsf(p->velocity.x + p->velocity.y) >= 0.05f)
     {
         // Render velocity vector.
-        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(green));
+        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(blue));
         SDL_RenderDrawLineF(render_window.sdl_renderer,
                             p->location.x,
                             p->location.y,
                             (p->location.x + p->velocity.x * 25)  ,
                             (p->location.y + p->velocity.y * 25) );
+
+
+        // Render orthogonal vector.
+        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
+        SDL_RenderDrawLineF(render_window.sdl_renderer,
+            p->location.x,
+            p->location.y,
+            (p->location.x + (p->velocity.y * 25)),
+            (p->location.y - (p->velocity.x * 25)));
+        // Render orthogonal vector.
+        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(green));
+        SDL_RenderDrawLineF(render_window.sdl_renderer,
+            p->location.x,
+            p->location.y,
+            (p->location.x - (p->velocity.y * 25)),
+            (p->location.y + (p->velocity.x * 25)));
+    }
+
+    SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
+    if (SDL_RenderFillRectF(render_window.sdl_renderer, &(p->draw_rect)) == -1) {
+        fprintf(stderr, "%s: %s\n", "SDL could not render Player.",
+            SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
     }
 }
 

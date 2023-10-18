@@ -75,6 +75,13 @@ enum {
 
 #define FILE_MODE_READONLY "r"
 
+typedef struct KeyFlags {
+    int left, right, up, down;
+    int space;
+
+} KeyFlags;
+extern KeyFlags key_flags;
+
 #pragma region Vector2f
 
 /**
@@ -420,5 +427,8 @@ void game_loop(float delta_time);
  * \param message message to log into. Keep to NULL if no logs are needed.
  */
 void quit(quit_code code, const char* message);
+
+void on_left_arrow(void);
+void on_right_arrow(void);
 
 #endif //PROJECTC_OLEIL_MODEL_H

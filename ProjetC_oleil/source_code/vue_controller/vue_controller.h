@@ -11,12 +11,6 @@ extern const struct SDL_Color white;
 extern const struct SDL_Color grey;
 extern const struct SDL_Color black;
 
-typedef struct KeyFlags {
-    int left, right, up, down;
-    int space;
-
-} KeyFlags;
-extern KeyFlags key_flags;
 
 /**
  * \brief Loop.Check Inputs queue and call appropriate function if any is detected.
