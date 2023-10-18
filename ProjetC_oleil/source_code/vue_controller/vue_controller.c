@@ -13,7 +13,7 @@ const struct SDL_Color yellow = {0xFA, 0xFA, 0x37, SDL_ALPHA_OPAQUE};
 KeyFlags key_flags = {0, 0, 0, 0, 0};
 
 int handle_inputs(void) {
-    // Static <=> this variable exist only ONE time in app.
+    // Static <=> this variable exists only ONE time in the app.
     static SDL_Event e;
 
     SDL_GetMouseState(&app.mouse_x, &app.mouse_y);
@@ -40,9 +40,11 @@ void keyboard_key_down(const SDL_KeyboardEvent *key_event) {
     Player *p = app.entities->player;
     switch (key_event->keysym.sym) {
         case SDLK_RIGHT:
+        case SDLK_d:
             key_flags.right = 1;
             break;
         case SDLK_LEFT:
+        case SDLK_q:
             key_flags.left = 1;
             break;
         case SDLK_UP:
@@ -65,9 +67,11 @@ void keyboard_key_up(const SDL_KeyboardEvent *key_event) {
     Player *p = app.entities->player;
     switch (key_event->keysym.sym) {
         case SDLK_RIGHT:
+        case SDLK_d:
             key_flags.right = 0;
             break;
         case SDLK_LEFT:
+        case SDLK_q:
             key_flags.left = 0;
             break;
         case SDLK_UP:
@@ -85,8 +89,7 @@ void keyboard_key_up(const SDL_KeyboardEvent *key_event) {
 
 void update_window_name(const int framerate) {
     static char win_name_buffer[128];
-    if (sprintf_s(win_name_buffer, 128, "%s | FPS : %i | Score : %i",
-                  APP_DEFAULT_NAME, framerate, app.score))
+    if (sprintf_s(win_name_buffer, 128, "%s | FPS : %i | Score : %i", APP_DEFAULT_NAME, framerate, app.score))
         SDL_SetWindowTitle(render_window.sdl_win, win_name_buffer);
 }
 
@@ -137,14 +140,10 @@ int render_fill_circle(SDL_Renderer *renderer, int x, int y, int radius) {
 
     while (offsety >= offsetx) {
 
-        status += SDL_RenderDrawLine(renderer, x - offsety, y + offsetx,
-                                     x + offsety, y + offsetx);
-        status += SDL_RenderDrawLine(renderer, x - offsetx, y + offsety,
-                                     x + offsetx, y + offsety);
-        status += SDL_RenderDrawLine(renderer, x - offsetx, y - offsety,
-                                     x + offsetx, y - offsety);
-        status += SDL_RenderDrawLine(renderer, x - offsety, y - offsetx,
-                                     x + offsety, y - offsetx);
+        status += SDL_RenderDrawLine(renderer, x - offsety, y + offsetx, x + offsety, y + offsetx);
+        status += SDL_RenderDrawLine(renderer, x - offsetx, y + offsety, x + offsetx, y + offsety);
+        status += SDL_RenderDrawLine(renderer, x - offsetx, y - offsety, x + offsetx, y - offsety);
+        status += SDL_RenderDrawLine(renderer, x - offsety, y - offsetx, x + offsety, y - offsetx);
 
         if (status < 0) {
             status = -1;
@@ -174,11 +173,7 @@ void render_systems(void) {
         const SolarSystem *s = (app.entities->solar_systems[i]);
         assert(s != NULL);
         SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(yellow));
-        render_fill_circle(
-                render_window.sdl_renderer,
-                (int) s->location.x,
-                (int)  s->location.y,
-                (int) s->radius);
+        render_fill_circle(render_window.sdl_renderer, (int) s->location.x, (int) s->location.y, (int) s->radius);
 
         // Render Planets & orbits
         for (int j = 0; j < s->nb_planets; ++j) {
@@ -186,62 +181,46 @@ void render_systems(void) {
             assert(p != NULL);
             // Draw orbit path
             SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(grey));
-            draw_circle(render_window.sdl_renderer,
-                        (int) s->location.x,
-                        (int) s->location.y,
+            draw_circle(render_window.sdl_renderer, (int) s->location.x, (int) s->location.y,
                         (int) (p->orbit < 0 ? (-p->orbit) : p->orbit));
             // Draw Planet
             SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(cyan));
-            render_fill_circle(
-                    render_window.sdl_renderer,
-                    (int) p->location.x,
-                    (int) p->location.y,
-                    (int) p->radius);
+            render_fill_circle(render_window.sdl_renderer, (int) p->location.x, (int) p->location.y, (int) p->radius);
         }
     }
 }
 
 void render_player(void) {
-    Player* p = app.entities->player;
+    Player *p = app.entities->player;
 
     // Only if velocity vector approximate length is slightly bigger than zero.
-    if (fabsf(p->velocity.x + p->velocity.y) >= 0.05f)
-    {
+    if (fabsf(p->velocity.x + p->velocity.y) >= 0.05f) {
         // Render velocity vector.
         SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(blue));
-        SDL_RenderDrawLineF(render_window.sdl_renderer,
-                            p->location.x,
-                            p->location.y,
-                            (p->location.x + p->velocity.x * 25)  ,
-                            (p->location.y + p->velocity.y * 25) );
+        SDL_RenderDrawLineF(render_window.sdl_renderer, p->location.x, p->location.y,
+                            (p->location.x + p->velocity.x * 25), (p->location.y + p->velocity.y * 25));
 
 
-        // Render orthogonal vector.
+        // Render orthogonal vector - left.
         SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
-        SDL_RenderDrawLineF(render_window.sdl_renderer,
-            p->location.x,
-            p->location.y,
-            (p->location.x + (p->velocity.y * 25)),
-            (p->location.y - (p->velocity.x * 25)));
-        // Render orthogonal vector.
+        SDL_RenderDrawLineF(render_window.sdl_renderer, p->location.x, p->location.y,
+                            (p->location.x + (p->velocity.y * 25)), (p->location.y - (p->velocity.x * 25)));
+        // Render orthogonal vector - right.
         SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(green));
-        SDL_RenderDrawLineF(render_window.sdl_renderer,
-            p->location.x,
-            p->location.y,
-            (p->location.x - (p->velocity.y * 25)),
-            (p->location.y + (p->velocity.x * 25)));
+        SDL_RenderDrawLineF(render_window.sdl_renderer, p->location.x, p->location.y,
+                            (p->location.x - (p->velocity.y * 25)), (p->location.y + (p->velocity.x * 25)));
     }
 
     SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
     if (SDL_RenderFillRectF(render_window.sdl_renderer, &(p->draw_rect)) == -1) {
         fprintf(stderr, "%s: %s\n", "SDL could not render Player.",
-            SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
+                SDL_GetError());  // NOLINT(cert-err33-c) - Error Output
     }
 }
 
 void render_end(void) {
     SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
-    SDL_RenderDrawRect(render_window.sdl_renderer,app.entities->end); // Render Goal.
+    SDL_RenderDrawRectF(render_window.sdl_renderer, app.entities->end); // Render Goal.
     // @todo check if offset for center is applied.
 }
 
@@ -249,7 +228,7 @@ void render_border(void) {
     SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
     // Border w and h is -20, because it cumulates both the margin and the offset.
     SDL_Rect border = {10, 10, (int) app.config->window_size.x - 20, (int) app.config->window_size.y - 20};
-    SDL_RenderDrawRect(render_window.sdl_renderer,&border); // Render Goal.
+    SDL_RenderDrawRect(render_window.sdl_renderer, &border); // Render Goal.
 }
 
 void render_clear(void) {
@@ -268,7 +247,8 @@ void render(void) {
         SDL_RenderPresent(render_window.sdl_renderer);
     } else {
         char error_log[128];
-        sprintf(error_log, "%s\n","Error in rendering, pointer to SDL_Renderer is NULL."); // NOLINT(cert-err33-c) - Error Output
+        sprintf(error_log, "%s\n",
+                "Error in rendering, pointer to SDL_Renderer is NULL."); // NOLINT(cert-err33-c) - Error Output
         quit(Error, error_log);
     }
 }

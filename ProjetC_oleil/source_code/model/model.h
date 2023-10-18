@@ -7,7 +7,9 @@
 #include <unistd.h>
 #elif defined(_WIN32) || defined(WIN32)
 #define OS_Windows 1
+
 #include <windows.h>
+
 #endif
 
 #include <SDL.h>
@@ -39,9 +41,13 @@
 #define COLOR_PARAMS(x) (x).r, (x).g, (x).b, (x).a
 
 #define INITIAL_SPEED 4.f
-#define GRAVITY_CONST 1.0f
 #define MAX_SPEED_VALUE 8.0f
 #define MIN_SPEED_VALUE 2.0f
+
+#define GRAVITY_CONST 1000.0f
+#define GRAV_DISTANCE_WEIGHTING 1.f
+#define GRAV_GENERAL_WEIGHTING 0.4f
+#define THRUST_SPEED_WEIGHTING 0.6f
 
 #define CONFIG_BUFFER_MAX_SIZE 32
 #define PLAYER_SIZE 10
@@ -63,14 +69,11 @@ typedef enum config_type {
 } config_type;
 
 typedef enum quit_code {
-    Error = -1,
-    Exit = 1,
-    PlayerDied = 2
+    Error = -1, Exit = 1, PlayerDied = 2, Victory = 3
 } quit_code;
 
 enum {
-    max_config_lines = 64,
-    max_config_large_buffer_size = 256
+    max_config_lines = 64, max_config_large_buffer_size = 256
 };
 
 #define FILE_MODE_READONLY "r"
@@ -132,7 +135,7 @@ typedef struct SolarSystem {
 
 typedef struct Entities {
     Player *player;
-    SDL_Rect *end;
+    SDL_FRect *end;
     SolarSystem **solar_systems;
     int nb_solar_systems;
 
@@ -165,7 +168,7 @@ typedef struct App {
     int score;
     int delta_time;
 
-    Vector2f* list_forces;
+    Vector2f *list_forces;
     int nb_forces;
 } App;
 // Global variable, container for App wide data.
@@ -173,8 +176,11 @@ extern App app;
 #pragma endregion
 
 #pragma region Collisions
+
 int is_colliding_rect_circle(const SDL_FRect *rect, const SDL_FPoint *location, float radius);
+
 int is_colliding_FRect_FRect(const SDL_FRect *r1, const SDL_FRect *r2);
+
 #pragma endregion
 
 #pragma region File_Reading
@@ -191,7 +197,7 @@ char *get_config_file_name(char **argv);
  * \param file_name Name of the file to be loaded, include extension.
  * \return Config* struct from the data read in file.
  */
-Config* load_config(const char *file_name);
+Config *load_config(const char *file_name);
 
 /**
  * \brief Find the name of a config from a line.
@@ -338,7 +344,7 @@ void player_update(void);
  */
 void handle_move_input(void);
 
-void clamp_vector(Vector2f* v, float min, float max);
+void clamp_vector(Vector2f *v, float min, float max);
 
 /**
  * \brief Update the planets location.
@@ -350,6 +356,16 @@ void planet_revolution_update(void);
  * \return 1 if there is a collision, 0 otherwise.
  */
 int check_player_planets_collisions(void);
+
+/**
+ * \brief If end collides with the player, exit the game and log Victory
+ */
+void handle_player_end_collision(void);
+
+/**
+ * \brief If a Planet collides with the player, exit the game and log Game Over
+ */
+void handle_player_planets_collisions(void);
 
 /** @todo Write documentation
  * \brief 
@@ -367,7 +383,7 @@ void physic_update(void);
  * \param divisor 
  * \return 
  */
-Vector2f vector_divi(const Vector2f* v, float divisor);
+Vector2f vector_divi(const Vector2f *v, float divisor);
 
 /** @todo Write documentation.
  * \brief 
@@ -375,7 +391,7 @@ Vector2f vector_divi(const Vector2f* v, float divisor);
  * \param v2 
  * \return 
  */
-float dot_product(const Vector2f* v1, const Vector2f* v2);
+float dot_product(const Vector2f *v1, const Vector2f *v2);
 
 /** @todo Write documentation.
  * \brief 
@@ -383,16 +399,23 @@ float dot_product(const Vector2f* v1, const Vector2f* v2);
  * \param divisor 
  * \return 
  */
-Vector2f vector_divi(const Vector2f* v, float divisor);
+Vector2f vector_divi(const Vector2f *v, float divisor);
 
 /**
-* \brief Return a new Vector from the difference of the 2 parameters vectors.
+* \brief Normalize of vector passed as parameter
+* \param v vector to normalize
+* \return 0 if OK, -1 if magnitude was too small
+*/
+int vector_normalize(Vector2f *v);
+
+/**
+* \brief Return a new Vector from the difference of the 2 parameters vectors
 * \return New Vector2f from (v1 - v2)
 */
-Vector2f vector_sub(const Vector2f* v1, const Vector2f* v2);
+Vector2f vector_sub(const Vector2f *v1, const Vector2f *v2);
 
 /**
- * \brief Return a new Vector from the addition of the 2 parameters vectors.
+ * \brief Return a new Vector from the addition of the 2 parameters vectors
  * \param v1
  * \param v2
  * \return New Vector2f from (v1 + v2)
@@ -402,33 +425,42 @@ Vector2f vectorf_add(const Vector2f *v1, const Vector2f *v2);
 Vector2f direction_from_FPoint(const SDL_FPoint *p1, const SDL_FPoint *p2);
 
 /**
- *  \brief Returns the distance btw a star and the ship;
+ *  \brief Returns the distance btw a star and the ship
  */
-float calculate_distance(const SolarSystem* s);
-
-Vector2f sum_forces(const Vector2f* vector_list, int length);
+float calculate_distance(const SolarSystem *s);
 
 /**
- * \brief Returns the vector of attraction between a star and the ship.
+ * \brief Sum of a list of Vector2f of size length
+ * \param vector_list list of vector to sum
+ * \param length length of the list
  */
-Vector2f grav_force(const SolarSystem* s, const Vector2f *direction);
+Vector2f sum_forces(const Vector2f *vector_list, int length);
 
+/**
+ * \brief Returns the vector of attraction between a star and the ship
+ */
+Vector2f grav_force(const SolarSystem *s);
+
+/**
+ * \brief Compute all attraction forces on the player, and update his velocity accordingly
+ */
 void apply_forces(void);
 
 /**
- * \brief Loop running each frame.
+ * \brief Loop running each frame
  * \param delta_time time elapsed in ms since last update
  */
 void game_loop(float delta_time);
 
 /**
- * \brief Quit the app and clear memory. Log error in needed.
- * \param code [1] Normal, [-1] Error. Define message output stream.
- * \param message message to log into. Keep to NULL if no logs are needed.
+ * \brief Quit the app and clear memory. Log error in needed
+ * \param code [1] Normal, [-1] Error. Define message output stream
+ * \param message message to log into. Keep to NULL if no logs are needed
  */
-void quit(quit_code code, const char* message);
+void quit(quit_code code, const char *message);
 
 void on_left_arrow(void);
+
 void on_right_arrow(void);
 
 #endif //PROJECTC_OLEIL_MODEL_H

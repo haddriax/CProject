@@ -37,7 +37,8 @@ Config *load_config(const char *file_name) {
 
             while (fgets(line, max_config_lines, file)) {
 
-                // if (line[0] == '\n') continue; // Do we accept blank lines ? (if yes, must be done in build_systems too)
+                // if (line[0] == '\n') continue; // Do we accept blank lines?
+                // (if yes, it must be done in build_systems too)
 
                 // 0/ Prepare a buffer.
                 char config_name[CONFIG_BUFFER_MAX_SIZE];
@@ -70,11 +71,10 @@ Config *load_config(const char *file_name) {
                 fprintf(stderr, "%s\n", "Error closing config files.");  // NOLINT(cert-err33-c) - Error Output
 
             // Setup end location. From config to actual game data.
-            app.entities->end->x = (int) app.config->goal_end.x;
-            app.entities->end->y = (int) app.config->goal_end.y;
+            app.entities->end->x = app.config->goal_end.x;
+            app.entities->end->y = app.config->goal_end.y;
         }
     }
-
     return app.config;
 }
 
@@ -142,7 +142,6 @@ int validate_is_int(const char *data) {
     for (size_t i = 0; i < SDL_strlen(data); ++i) {
         if (SDL_isspace(data[i])) // Want no space
             return 0;
-
         if (SDL_isalpha(data[i])) // Want no alpha char
             return 0;
     }
@@ -152,7 +151,7 @@ int validate_is_int(const char *data) {
 int validate_is_signed_int(const char *data) {
     size_t i = 0;
     // Check if first char is the sign
-    if (data[0] == '-')
+    if (data[0] == SEPARATOR_SUBSTRACT)
         i = 1;
 
     for (; i < SDL_strlen(data); ++i) {
@@ -252,7 +251,7 @@ Vector2f read_vector(const char *data) {
 
     const int data_length = (int) SDL_strlen(data);
 
-    // Get char until separator index is found.
+    // Get char until the separator index is found.
     char x[8];
     int i = 0;
     for (; i < char_index; ++i)
@@ -281,7 +280,7 @@ SDL_FPoint read_float_point(const char *data) {
 
     const int data_length = (int) SDL_strlen(data); // OK for our value size, but may be at risk of int overflow
 
-    // Get char until separator index is found.
+    // Get char until the separator index is found.
     char x[8];
     int i = 0;
     for (; i < char_index - 1; ++i)
@@ -535,8 +534,9 @@ void init_render_window(const int width, const int height, const char *name) {
         sprintf(buffer, "1 SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         quit(Error, buffer);
     } else {
-        SDL_Window *window = render_window.sdl_win = 
-            SDL_CreateWindow(name, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,SDL_WINDOW_SHOWN);
+        SDL_Window *window = render_window.sdl_win = SDL_CreateWindow(name, SDL_WINDOWPOS_CENTERED,
+                                                                      SDL_WINDOWPOS_CENTERED, width, height,
+                                                                      SDL_WINDOW_SHOWN);
 
         if (window == NULL) {
             char buffer[128];
@@ -571,28 +571,24 @@ Vector2f vectorf_add(const Vector2f *v1, const Vector2f *v2) {
 int is_colliding_rect_circle(const SDL_FRect *rect, const SDL_FPoint *location, float radius) {
     float dist_x = fabsf(location->x - rect->x);
     float dist_y = fabsf(location->y - rect->y);
-
     if (dist_x > (rect->w / 2 + radius)) return 0;
     if (dist_y > (rect->h / 2 + radius)) return 0;
-
     if (dist_x <= (rect->w / 2)) return 1;
     if (dist_y <= (rect->h / 2)) return 1;
-
     // Corner collision
     float corner_dist_squared = powf(dist_x - rect->w / 2, 2) + powf(dist_y - rect->h / 2, 2);
-
     return (corner_dist_squared <= (radius * radius));
 }
 
 int is_colliding_FRect_FRect(const SDL_FRect *r1, const SDL_FRect *r2) {
-    // Up
-    // @todo
-    // Down
-    // @todo
-    // Left
-    // @todo
-    // Right
-    // @todo
+    if ((r1->x + r1->w < r2->x) || (r1->x > r2->x + r2->w)) {
+        return 0;
+    }
+
+    if ((r1->y + r1->h < r2->y) || (r1->y > r2->y + r2->h)) {
+        return 0;
+    }
+    return 1;
 }
 
 void player_update(void) {
@@ -600,25 +596,21 @@ void player_update(void) {
     app.entities->player->location.y += app.entities->player->velocity.y;
 
     SDL_FRect *r = &app.entities->player->draw_rect;
-
     r->x = app.entities->player->location.x - (PLAYER_SIZE / 2.f);
     r->y = app.entities->player->location.y - (PLAYER_SIZE / 2.f);
 }
 
-void handle_move_input()
-{
+void handle_move_input() {
 }
 
-void clamp_vector(Vector2f* v, float min, float max)
-{
+void clamp_vector(Vector2f *v, float min, float max) {
     assert(min > 0 && max > min && v != NULL);
     float magnitude = sqrtf(v->x * v->x + v->y * v->y);
 
     if (magnitude < min) {
         v->x = v->x * min / magnitude;
         v->y = v->y * min / magnitude;
-    }
-    else if (magnitude > max) {
+    } else if (magnitude > max) {
         v->x = v->x * max / magnitude;
         v->y = v->y * max / magnitude;
     }
@@ -634,22 +626,17 @@ void planet_revolution_update(void) {
 
             const float tr = p->radius;
             p->location.x = p->parent_system->location.x +
-                            cosf(simulated_time * (float) ((2 * M_PI) / tr) * (p->orbit < 0 ? -1.f : 1.f)
-                            ) * p->orbit;
+                            cosf(simulated_time * (float) ((2 * M_PI) / tr) * (p->orbit < 0 ? -1.f : 1.f)) * p->orbit;
             p->location.y = p->parent_system->location.y +
-                            sinf(simulated_time * (float) ((2 * M_PI) / tr) * (p->orbit < 0 ? -1.f : 1.f)
-                            ) * p->orbit;
+                            sinf(simulated_time * (float) ((2 * M_PI) / tr) * (p->orbit < 0 ? -1.f : 1.f)) * p->orbit;
         }
     }
 }
 
 int check_player_planets_collisions(void) {
     for (int i = 0; i < app.entities->nb_solar_systems; ++i) {
-        const SolarSystem* s = app.entities->solar_systems[i];
-        SDL_FPoint tmp = {
-                (float)s->location.x,
-                (float)s->location.y
-        };
+        const SolarSystem *s = app.entities->solar_systems[i];
+        SDL_FPoint tmp = {(float) s->location.x, (float) s->location.y};
         if (is_colliding_rect_circle(&app.entities->player->draw_rect, &tmp, s->radius))
             return 1;
         for (int j = 0; j < s->nb_planets; ++j) {
@@ -661,41 +648,54 @@ int check_player_planets_collisions(void) {
     return 0;
 }
 
+void handle_player_end_collision(void) {
+    if (is_colliding_FRect_FRect(app.entities->end, &app.entities->player->draw_rect))
+        quit(Victory, NULL);
+}
+
+void handle_player_planets_collisions(void) {
+    if (check_player_planets_collisions())
+        quit(PlayerDied, NULL);
+}
+
 #pragma region Physic
-Vector2f vector_divi(const Vector2f* v, float divisor)
-{
+
+Vector2f vector_divi(const Vector2f *v, float divisor) {
     assert(divisor > 0);
-    const Vector2f res = { v->x / divisor, v->y / divisor };
+    const Vector2f res = {v->x / divisor, v->y / divisor};
     return res;
 }
 
-float dot_product(const Vector2f *v1, const Vector2f *v2)
-{
+float dot_product(const Vector2f *v1, const Vector2f *v2) {
     app.entities->player->location.x += app.entities->player->velocity.x;
     app.entities->player->location.y += app.entities->player->velocity.y;
 }
 
-void vector_normalize(Vector2f* v)
-{
-	const float x = v->x;
-	const float y = v->y;
+int vector_normalize(Vector2f *v) {
+    const float x = v->x;
+    const float y = v->y;
+    const float norm = sqrtf(x * x + y * y);
+
+    if (fabsf(norm) < 0.00000005f)
+        return -1;
+
     assert(sqrtf(x * x + y * y) > 0);
     (*v) = vector_divi(v, sqrtf(x * x + y * y));
+    return 0;
 }
 
-Vector2f vector_sub(const Vector2f* v1, const Vector2f* v2) {
-	const Vector2f v = { v1->x - v2->x, v1->y - v2->y};
+Vector2f vector_sub(const Vector2f *v1, const Vector2f *v2) {
+    const Vector2f v = {v1->x - v2->x, v1->y - v2->y};
     return v;
 }
 
-Vector2f direction_from_FPoint(const SDL_FPoint *p1, const SDL_FPoint *p2)
-{
-    Vector2f v = { p1->x - p2->x,p1->y - p2->y};
+Vector2f direction_from_FPoint(const SDL_FPoint *p1, const SDL_FPoint *p2) {
+    Vector2f v = {p1->x - p2->x, p1->y - p2->y};
     vector_normalize(&v);
     return v;
 }
 
-float calculate_distance(const SolarSystem* s) {
+float calculate_distance(const SolarSystem *s) {
     const SDL_FPoint p_loc = app.entities->player->location;
     const float x1 = p_loc.x;
     const float y1 = p_loc.y;
@@ -704,60 +704,62 @@ float calculate_distance(const SolarSystem* s) {
     const float y2 = s->location.y;
 
     return sqrtf((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-
 }
 
-Vector2f grav_force(const SolarSystem* s, const Vector2f *direction)
-{
-	const float mass_player = app.entities->player->mass;
-	const float mass_star = s->mass;
-	const float dist = calculate_distance(s);
-	const float F = GRAVITY_CONST * (mass_player * mass_star) / (dist * dist);
-	const Vector2f v = { F * direction->x, F * direction->y };
-    return v ;
-
+Vector2f grav_force(const SolarSystem *s) {
+    assert(GRAV_DISTANCE_WEIGHTING != 0);
+    Vector2f dir = direction_from_FPoint(&s->location, &app.entities->player->location);
+    const float mass_player = app.entities->player->mass;
+    const float mass_star = s->mass;
+    const float dist = calculate_distance(s);
+    const float F = GRAVITY_CONST * (mass_player * mass_star) / (dist * dist * GRAV_DISTANCE_WEIGHTING);
+    const Vector2f v = {F * dir.x, F * dir.y};
+    return v;
 }
 
-Vector2f sum_forces(const Vector2f* vector_list, const int length)
-{
+Vector2f sum_forces(const Vector2f *vector_list, const int length) {
     Vector2f res = vector2f_zero;
-
     for (int i = 0; i < length; ++i)
-    {
         res = vectorf_add(&res, &vector_list[i]);
-    }
     return res;
 }
 
-void start_simulation(void)
-{
+void start_simulation(void) {
     // Create random seed based on current time.
-    srand((unsigned int)time(NULL));  // NOLINT(cert-msc51-cpp) // Doesn't mind if this is predictable.
+    srand((unsigned int) time(NULL));  // NOLINT(cert-msc51-cpp) // Doesn't mind if this is predictable.
 
     // Create a random value in [0.00f;1.00f]
-    const float s = ((float) (rand() % 2) / 10) + ( (float) (rand() % 100) / 100);  // NOLINT(concurrency-mt-unsafe)
+    const float s = ((float) (rand() % 2) / 10) + ((float) (rand() % 100) / 100);  // NOLINT(concurrency-mt-unsafe)
 
     // const float initial_speed = 2.f + (float) (rand() % 6); // For a random initial speed  // NOLINT(concurrency-mt-unsafe)
 
     // Create initial velocity, using <s> to get 2 float which added gives 1.0.
-    // Then reverse direction by multiplying it by 1 or -1, depending of a random value.
+    // Then reverse direction by multiplying it by 1 or -1, depending on a random value.
     Vector2f initial_velocity;
     initial_velocity.x = s * INITIAL_SPEED * (rand() % 2 == 0 ? -1.f : 1.f);  // NOLINT(concurrency-mt-unsafe)
     initial_velocity.y = (1 - s) * INITIAL_SPEED * (rand() % 2 == 0 ? -1.f : 1.f);  // NOLINT(concurrency-mt-unsafe)
 
     // Apply our velocity to the Player.
     app.entities->player->velocity = initial_velocity;
-    // Start simulation. i.e. Player will now be affected by Gravity and by it's own velocity.
+
+    const float initial_speed = sqrtf(
+            (initial_velocity.x * initial_velocity.x) + (initial_velocity.y * initial_velocity.y));
+
+    app.entities->player->speed = initial_speed;
+
+    vector_normalize(&initial_velocity);
+    app.entities->player->direction = initial_velocity; // Velocity normalized here.
+
+    // Start simulation. i.e. Player will now be affected by Gravity and by its own velocity.
     app.simulation_started = 1;
-}   
+}
 
 void physic_update(void) {
-
     planet_revolution_update();
 
     if (app.simulation_started) {
-        if (check_player_planets_collisions())
-            quit(PlayerDied, NULL);
+        handle_player_end_collision();
+        handle_player_planets_collisions();
 
         apply_forces();
         keep_player_on_screen();
@@ -767,63 +769,68 @@ void physic_update(void) {
 
 void apply_forces(void) {
     Player *player = app.entities->player;
-    SolarSystem  **systems = app.entities->solar_systems;
+    SolarSystem **systems = app.entities->solar_systems;
     Vector2f *list_forces = app.list_forces;
 
-    for (int i = 0; i < app.nb_forces; i++) {
-        Vector2f dir = direction_from_FPoint(&(systems[i]->location), &(player->location));
-        // Vector2f dir = direction_from_FPoint(&(player->location) , &(systems[i]->location)); // Feature, not a bug.
-        list_forces[i] = grav_force(systems[i], &dir);
-    }
+    for (int i = 0; i < app.nb_forces; i++)
+        list_forces[i] = grav_force(systems[i]);
 
-    const Vector2f _sum_forces = sum_forces(list_forces, app.nb_forces);
+    Vector2f _sum_forces = sum_forces(list_forces, app.nb_forces);
 
-    const Vector2f velocity = {
-            (player->direction.x * player->speed),
-            (player->direction.y * player->speed)
-    };
+    _sum_forces = vectorf_add(&_sum_forces, &player->thrust);
+
+    const Vector2f velocity = {(player->direction.x * player->speed), (player->direction.y * player->speed)};
 
     Vector2f result_sum_forces = vectorf_add(&_sum_forces, &velocity);
 
     const float speed = sqrtf(
-            (result_sum_forces.x * result_sum_forces.x)
-            + (result_sum_forces.y * result_sum_forces.y)
-    );
+            (result_sum_forces.x * result_sum_forces.x) + (result_sum_forces.y * result_sum_forces.y));
     player->speed = speed;
 
     vector_normalize(&result_sum_forces);
-    player->direction = result_sum_forces;
-    player->velocity.x += result_sum_forces.x * speed;
-    player->velocity.y += result_sum_forces.y * speed;
+    player->velocity.x += (result_sum_forces.x * speed) * GRAV_GENERAL_WEIGHTING;
+    player->velocity.y += (result_sum_forces.y * speed) * GRAV_GENERAL_WEIGHTING;
+
+    Vector2f velocity_to_normalize = player->velocity;
+    vector_normalize(&velocity_to_normalize);
+    player->direction = velocity_to_normalize;
 
     clamp_vector(&player->velocity, MIN_SPEED_VALUE, MAX_SPEED_VALUE);
 }
+
 #pragma endregion // Physic
 
 void game_loop(float delta_time) {
-    if (key_flags.left)
+    app.entities->player->thrust.x = 0;
+    app.entities->player->thrust.y = 0;
+
+    if (key_flags.left == 1)
         on_left_arrow();
-    if (key_flags.right)
+    else if (key_flags.right == 1)
         on_right_arrow();
 
-
+    // printf("%f:%f\n", app.entities->player->thrust.x, app.entities->player->thrust.y);
+    // printf("%i:%i\n", key_flags.left, key_flags.right);
     physic_update();
 }
 
-void quit(const quit_code code, const char* message) {
-        switch (code) {
-            case Error:
-                if (message != NULL)
+void quit(const quit_code code, const char *message) {
+    switch (code) {
+        case Error:
+            if (message != NULL)
                 fprintf(stderr, "%s", message);
-                break;
-            case Exit:
-                if (message != NULL)
+            break;
+        case Exit:
+            if (message != NULL)
                 fprintf(stdout, "%s", message);
-                break;
-            case PlayerDied:
-                fprintf(stdout, "%s", "Game Over");
-                break;
-        }
+            break;
+        case PlayerDied:
+            fprintf(stdout, "%s", "Game Over");
+            break;
+        case Victory:
+            fprintf(stdout, "%s", "Victory");
+            break;
+    }
 
     SDL_DestroyWindow(render_window.sdl_win);
     SDL_DestroyRenderer(render_window.sdl_renderer);
@@ -831,8 +838,7 @@ void quit(const quit_code code, const char* message) {
 
     if (app.entities->end) free(app.entities->end);
     if (app.entities->player) free(app.entities->player);
-    for (int i = 0; i < app.entities->nb_solar_systems; ++i)
-    {
+    for (int i = 0; i < app.entities->nb_solar_systems; ++i) {
         SolarSystem *s = app.entities->solar_systems[i];
         if (s) free(s);
     }
@@ -842,15 +848,14 @@ void quit(const quit_code code, const char* message) {
     exit(1);  // NOLINT(concurrency-mt-unsafe)
 }
 
-void on_left_arrow(void)
-{
-    float delta_t = ((float) app.delta_time / 1000);
-    Vector2f* velocity = &(app.entities->player->velocity);
-    velocity->x += velocity->x * cosf((float) (M_PI / 100)) - velocity->y * sinf((float) (M_PI / 100));
-    velocity->y += velocity->x * cosf((float) (M_PI / 100)) + velocity->y * sinf((float) (M_PI / 100));
+void on_left_arrow(void) {
+    Player *p = app.entities->player;
+    p->thrust.x = p->direction.y * p->speed * THRUST_SPEED_WEIGHTING;
+    p->thrust.y = -p->direction.x * p->speed * THRUST_SPEED_WEIGHTING;
 }
 
-void on_right_arrow(void)
-{
-
+void on_right_arrow(void) {
+    Player *p = app.entities->player;
+    p->thrust.x = -p->direction.y * THRUST_SPEED_WEIGHTING;
+    p->thrust.y = p->direction.x * THRUST_SPEED_WEIGHTING;
 }

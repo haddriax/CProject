@@ -69,14 +69,17 @@ void render_systems(void);
  * \brief Render player as a filled red rectangle using its SDL_FRect.
  */
 void render_player(void);
+
 /**
  * \brief Render goal as a white rectangle using its SDL_FRect.
  */
 void render_end(void);
+
 /**
  * \brief Render border as a white rectangle using its SDL_FRect.
  */
 void render_border(void);
+
 /**
  * \brief Clear window, set surface to black.
  */
