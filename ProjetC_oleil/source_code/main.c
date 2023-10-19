@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "vue_controller/vue_controller.h"
 
 // Expected time for a frame, in milliseconds.
@@ -17,7 +18,7 @@ int main(int argc, char **argv) {
         uint64_t t_begin_frame = SDL_GetTicks64();
 
         // Skip the frame if it does not match our target framerate.
-        // i.e. if we compare <last frame end time> with <new time>.
+        // I.e., if we compare <last frame end time> with <new time>.
         if (t_begin_frame - t_end_frame < TARGET_FRAME_DURATION)
             continue;
 

@@ -78,14 +78,14 @@ enum {
 
 #define FILE_MODE_READONLY "r"
 
+#pragma region Typedef
+
 typedef struct KeyFlags {
     int left, right, up, down;
     int space;
 
 } KeyFlags;
 extern KeyFlags key_flags;
-
-#pragma region Vector2f
 
 /**
  * \brief Integer Vector of Dimension 2; Coordinates x and y.
@@ -95,9 +95,6 @@ typedef struct Vector2f {
 } Vector2f;
 extern const Vector2f vector2f_zero;
 
-#pragma endregion
-
-#pragma region Typedef
 
 /**
  * \brief Container for Player data
@@ -340,10 +337,11 @@ void keep_player_on_screen(void);
 void player_update(void);
 
 /**
- * \brief Reading the Input flags, accelerate the player.
+ * \brief Keep the magnitude of the vector between parameters
+ * \param v vector to clamp.
+ * \param min minimal magnitude allowed for the vector.
+ * \param max maximal magnitude allowed for the vector.
  */
-void handle_move_input(void);
-
 void clamp_vector(Vector2f *v, float min, float max);
 
 /**
@@ -393,14 +391,6 @@ Vector2f vector_divi(const Vector2f *v, float divisor);
  */
 float dot_product(const Vector2f *v1, const Vector2f *v2);
 
-/** @todo Write documentation.
- * \brief 
- * \param v 
- * \param divisor 
- * \return 
- */
-Vector2f vector_divi(const Vector2f *v, float divisor);
-
 /**
 * \brief Normalize of vector passed as parameter
 * \param v vector to normalize
@@ -421,6 +411,8 @@ Vector2f vector_sub(const Vector2f *v1, const Vector2f *v2);
  * \return New Vector2f from (v1 + v2)
  */
 Vector2f vectorf_add(const Vector2f *v1, const Vector2f *v2);
+
+void vector2f_rotate(Vector2f *v, float delta_rad);
 
 Vector2f direction_from_FPoint(const SDL_FPoint *p1, const SDL_FPoint *p2);
 
@@ -458,6 +450,11 @@ void game_loop(float delta_time);
  * \param message message to log into. Keep to NULL if no logs are needed
  */
 void quit(quit_code code, const char *message);
+
+/**
+ * \brief Reading the Input flags processed from controller, accelerate the player.
+ */
+void handle_move_input(void);
 
 void on_left_arrow(void);
 

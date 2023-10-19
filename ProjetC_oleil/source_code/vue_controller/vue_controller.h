@@ -36,8 +36,6 @@ void keyboard_key_up(const SDL_KeyboardEvent *key_event);
 */
 void update_window_name(int framerate);
 
-#pragma region Drawing_fuction
-
 /**
  * \brief Imported code - Replacement for glx
  * \param renderer 
@@ -58,8 +56,6 @@ int draw_circle(SDL_Renderer *renderer, int32_t centre_x, int32_t centre_y, int3
  */
 int render_fill_circle(SDL_Renderer *renderer, int x, int y, int radius);
 
-#pragma endregion
-
 /**
  * \brief Render all Systems and Planets.
  */
@@ -79,6 +75,11 @@ void render_end(void);
  * \brief Render border as a white rectangle using its SDL_FRect.
  */
 void render_border(void);
+
+/**
+ * \brief Render gravity attraction as red vector, coming from the systems and toward the ship.
+ */
+void render_gravity_forces(void);
 
 /**
  * \brief Clear window, set surface to black.

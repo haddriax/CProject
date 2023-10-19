@@ -10,6 +10,8 @@ const struct SDL_Color white = {0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE};
 const struct SDL_Color grey = {0x40, 0x40, 0x40, SDL_ALPHA_OPAQUE};
 const struct SDL_Color yellow = {0xFA, 0xFA, 0x37, SDL_ALPHA_OPAQUE};
 
+#pragma region Inputs
+
 KeyFlags key_flags = {0, 0, 0, 0, 0};
 
 int handle_inputs(void) {
@@ -37,7 +39,6 @@ int handle_inputs(void) {
 }
 
 void keyboard_key_down(const SDL_KeyboardEvent *key_event) {
-    Player *p = app.entities->player;
     switch (key_event->keysym.sym) {
         case SDLK_RIGHT:
         case SDLK_d:
@@ -64,7 +65,6 @@ void keyboard_key_down(const SDL_KeyboardEvent *key_event) {
 }
 
 void keyboard_key_up(const SDL_KeyboardEvent *key_event) {
-    Player *p = app.entities->player;
     switch (key_event->keysym.sym) {
         case SDLK_RIGHT:
         case SDLK_d:
@@ -87,11 +87,15 @@ void keyboard_key_up(const SDL_KeyboardEvent *key_event) {
     }
 }
 
+#pragma endregion // Inputs
+
 void update_window_name(const int framerate) {
     static char win_name_buffer[128];
     if (sprintf_s(win_name_buffer, 128, "%s | FPS : %i | Score : %i", APP_DEFAULT_NAME, framerate, app.score))
         SDL_SetWindowTitle(render_window.sdl_win, win_name_buffer);
 }
+
+#pragma region Rendering
 
 int draw_circle(SDL_Renderer *renderer, const int32_t centre_x, const int32_t centre_y, const int32_t radius) {
     const int32_t diameter = (radius * 2);
@@ -200,7 +204,6 @@ void render_player(void) {
         SDL_RenderDrawLineF(render_window.sdl_renderer, p->location.x, p->location.y,
                             (p->location.x + p->velocity.x * 25), (p->location.y + p->velocity.y * 25));
 
-
         // Render orthogonal vector - left.
         SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
         SDL_RenderDrawLineF(render_window.sdl_renderer, p->location.x, p->location.y,
@@ -221,7 +224,7 @@ void render_player(void) {
 void render_end(void) {
     SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(white));
     SDL_RenderDrawRectF(render_window.sdl_renderer, app.entities->end); // Render Goal.
-    // @todo check if offset for center is applied.
+    // @todo check if offset (location as center instead of top left corner)
 }
 
 void render_border(void) {
@@ -229,6 +232,23 @@ void render_border(void) {
     // Border w and h is -20, because it cumulates both the margin and the offset.
     SDL_Rect border = {10, 10, (int) app.config->window_size.x - 20, (int) app.config->window_size.y - 20};
     SDL_RenderDrawRect(render_window.sdl_renderer, &border); // Render Goal.
+}
+
+void render_gravity_forces(void) {
+    if (!app.simulation_started)
+        return;
+
+    for (int i = 0; i < app.entities->nb_solar_systems; ++i)
+    {
+        assert(app.entities->solar_systems[i]);
+        SolarSystem *s = app.entities->solar_systems[i];
+        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
+        SDL_RenderDrawLineF(render_window.sdl_renderer,
+                            s->location.x,
+                            s->location.y,
+                            s->location.x - app.list_forces[i].x * 10,
+                            s->location.y - app.list_forces[i].y * 10);
+    }
 }
 
 void render_clear(void) {
@@ -242,9 +262,24 @@ void render(void) {
         render_end();
         render_systems();
         render_border();
+        render_gravity_forces();
         render_player();
-        // Finalize rendering.
-        SDL_RenderPresent(render_window.sdl_renderer);
+
+
+        static Vector2f vector = {200, 200 };
+        float angle = atan2f(vector.x, vector.y);
+        angle += M_PI / 180.0;
+
+        vector2f_rotate(&vector, angle);
+
+        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(blue));
+        SDL_RenderDrawLineF(render_window.sdl_renderer,
+                           app.config->window_size.x / 2,
+                            app.config->window_size.y / 2,
+                            app.config->window_size.x + vector.x,
+                            app.config->window_size.y + vector.y);
+
+        SDL_RenderPresent(render_window.sdl_renderer); // Finalize rendering.
     } else {
         char error_log[128];
         sprintf(error_log, "%s\n",
@@ -253,3 +288,4 @@ void render(void) {
     }
 }
 
+#pragma endregion //Rendering
