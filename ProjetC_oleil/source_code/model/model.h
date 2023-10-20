@@ -7,9 +7,7 @@
 #include <unistd.h>
 #elif defined(_WIN32) || defined(WIN32)
 #define OS_Windows 1
-
 #include <windows.h>
-
 #endif
 
 #include <SDL.h>
@@ -19,11 +17,11 @@
 #include <math.h>
 #include <time.h>
 
+// /!\ @todo: bug fix: check why it modifies the config reading behavior.
 #define PRINT_CONFIG_CREATION 0
 
 #define APP_DEFAULT_NAME "Projet C"
 
-#pragma region Configs_Names
 #define CONFIG_DEFAULT_NAME "config.txt"
 #define CONFIG_NAME_WINDOW_SIZE "WIN_SIZE"
 #define CONFIG_NAME_PLAYER_LOCATION "START"
@@ -36,7 +34,6 @@
 #define CONFIG_NAME_PLANET_ORBIT "PLANET_ORBIT"
 #define SEPARATOR_SPACE ' '
 #define SEPARATOR_SUBSTRACT '-'
-#pragma endregion // Configs_Names
 
 #define COLOR_PARAMS(x) (x).r, (x).g, (x).b, (x).a
 
@@ -45,9 +42,10 @@
 #define MIN_SPEED_VALUE 2.0f
 
 #define GRAVITY_CONST 1000.0f
-#define GRAV_DISTANCE_WEIGHTING 1.f
-#define GRAV_GENERAL_WEIGHTING 0.4f
-#define THRUST_SPEED_WEIGHTING 0.6f
+#define GRAV_DISTANCE_WEIGHTING 1.4f
+#define GRAV_GENERAL_WEIGHTING 0.6f
+#define THRUST_SPEED_WEIGHTING 1.6f
+#define VELOCITY_DELTA_T_WEIGHTING 0.045f
 
 #define CONFIG_BUFFER_MAX_SIZE 32
 #define PLAYER_SIZE 10
@@ -69,7 +67,7 @@ typedef enum config_type {
 } config_type;
 
 typedef enum quit_code {
-    Error = -1, Exit = 1, PlayerDied = 2, Victory = 3
+    Error = -1, Exit = 1, PlayerDied = 2, Victory = 3, No_Conf_File = 4, Config_Invalid = 5
 } quit_code;
 
 enum {
@@ -78,11 +76,8 @@ enum {
 
 #define FILE_MODE_READONLY "r"
 
-#pragma region Typedef
-
 typedef struct KeyFlags {
-    int left, right, up, down;
-    int space;
+    int left, right;
 
 } KeyFlags;
 extern KeyFlags key_flags;
@@ -167,20 +162,14 @@ typedef struct App {
 
     Vector2f *list_forces;
     int nb_forces;
+    int show_force_vectors;
 } App;
 // Global variable, container for App wide data.
 extern App app;
-#pragma endregion
-
-#pragma region Collisions
 
 int is_colliding_rect_circle(const SDL_FRect *rect, const SDL_FPoint *location, float radius);
 
 int is_colliding_FRect_FRect(const SDL_FRect *r1, const SDL_FRect *r2);
-
-#pragma endregion
-
-#pragma region File_Reading
 
 /**
  * \brief Find the name of the config file passed as a command argument.
@@ -286,10 +275,6 @@ int read_int(const char *data);
  */
 int read_signed_int(const char *data);
 
-#pragma endregion
-
-#pragma region Initializers&Builders
-
 /**
  * \brief Alloc and generate a new Solar System, expect file current line to be STAR_POS.
  * ` Auto insert newly created SolarSystem into entities list.
@@ -326,7 +311,6 @@ void init_config(const char *file_name);
 /** @brief Initialize the window and SDL context. */
 void init_render_window(int width, int height, const char *name);
 
-#pragma endregion
 
 /** @brief Loop the player through the window border, so it stays in the window. */
 void keep_player_on_screen(void);
@@ -382,14 +366,6 @@ void physic_update(void);
  * \return 
  */
 Vector2f vector_divi(const Vector2f *v, float divisor);
-
-/** @todo Write documentation.
- * \brief 
- * \param v1 
- * \param v2 
- * \return 
- */
-float dot_product(const Vector2f *v1, const Vector2f *v2);
 
 /**
 * \brief Normalize of vector passed as parameter

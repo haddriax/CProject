@@ -5,7 +5,7 @@ const Vector2f vector2f_zero = {0.f, 0.f};
 
 // Global container for the app.
 RenderWindow render_window = {NULL, NULL, NULL};
-App app = {NULL, NULL, 0, 0, 0, 0, 0};
+App app = {NULL, NULL, 0, 0, 0, 0, 0, NULL, 0,0 };
 
 char *get_config_file_name(char **argv) {
     return (argv && argv[1]) ? argv[1] : "config.txt";
@@ -22,11 +22,13 @@ Config *load_config(const char *file_name) {
 
         // Try to open file.
         FILE *file = NULL;
-        const errno_t e = fopen_s(&file, file_name, FILE_MODE_READONLY);
-        if (e || (!file)) // ERROR HANDLING - OPENING FAILED.
+        // const int e = fopen_s(&file, file_name, FILE_MODE_READONLY); // C11 - DO NOT USE
+        // @todo: check if errno as a global variable is ok with C99
+        file = fopen(file_name, FILE_MODE_READONLY);
+        if (!file) // ERROR HANDLING - OPENING FAILED.
         {
             char buffer[128];
-            sprintf(buffer, "Error when opening config file [%s]: %s\n", file_name, strerror(e));
+            sprintf(buffer, "Error when opening config file [%s].\n", file_name);
             quit(Error, buffer);
         }
 
@@ -53,13 +55,12 @@ Config *load_config(const char *file_name) {
                 char *data = get_data_from_line(line, name_length);
 
                 // 4/ First data validation.
-                const int data_validated = validate_config_line(data, t);
-                if (data_validated) {
-                    // 5/ Process validated data.
-                    process_data(data, t, file, &line_index);
-                } else {
-                    fprintf(stderr, "%s\n", "Not valid.");  // NOLINT(cert-err33-c) - Error Output
+                if (!validate_config_line(data, t))
+                {
+                    quit(Config_Invalid, data);
                 }
+
+                process_data(data, t, file, &line_index);
 
                 if (t != nb_solar_system)
                     ++line_index;
@@ -75,6 +76,11 @@ Config *load_config(const char *file_name) {
             app.entities->end->y = app.config->goal_end.y;
         }
     }
+    else
+    {
+        quit(No_Conf_File, NULL);
+    }
+
     return app.config;
 }
 
@@ -361,7 +367,10 @@ SolarSystem *build_system(FILE *file, int *line_index, Vector2f spawn_location) 
         // 3/ Separate the data from the config name.
         char *data = get_data_from_line(line, name_length);
         // 4/ First data validation.
-        validate_config_line(data, t);
+        if (!validate_config_line(data, t))
+        {
+            quit(Config_Invalid, data);
+        }
         // 5/ Read and apply data. Here STAR_RADIUS
         s->radius = (float) read_int(data);
         s->mass = s->radius;
@@ -382,7 +391,10 @@ SolarSystem *build_system(FILE *file, int *line_index, Vector2f spawn_location) 
         // 3/ Separate the data from the config name.
         char *data = get_data_from_line(line, name_length);
         // 4/ First data validation.
-        validate_config_line(data, t);
+        if (!validate_config_line(data, t))
+        {
+            quit(Config_Invalid, data);
+        }
 
         // 5/ Read and apply data. Here NB_PLANET.
         s->nb_planets = read_int(data);
@@ -395,7 +407,10 @@ SolarSystem *build_system(FILE *file, int *line_index, Vector2f spawn_location) 
                 const int p_name_length = find_config_line_name(line, config_name);
                 t = find_config_type(config_name);
                 char *p_data = get_data_from_line(line, p_name_length);
-                validate_config_line(p_data, t);
+                if (!validate_config_line(data, t))
+                {
+                    quit(Config_Invalid, data);
+                }
                 radius = read_int(p_data);
                 free(p_data);
             }
@@ -403,7 +418,10 @@ SolarSystem *build_system(FILE *file, int *line_index, Vector2f spawn_location) 
                 const int p_name_length = find_config_line_name(line, config_name);
                 t = find_config_type(config_name);
                 char *p_data = get_data_from_line(line, p_name_length);
-                validate_config_line(p_data, t);
+                if (!validate_config_line(data, t))
+                {
+                    quit(Config_Invalid, data);
+                }
                 orbit = read_signed_int(p_data);
                 free(p_data);
             }
@@ -599,8 +617,8 @@ int is_colliding_FRect_FRect(const SDL_FRect *r1, const SDL_FRect *r2) {
 }
 
 void player_update(void) {
-    app.entities->player->location.x += app.entities->player->velocity.x * ((float) app.delta_time / 100);
-    app.entities->player->location.y += app.entities->player->velocity.y * ((float) app.delta_time / 100);
+    app.entities->player->location.x += app.entities->player->velocity.x * ((float) app.delta_time * VELOCITY_DELTA_T_WEIGHTING);
+    app.entities->player->location.y += app.entities->player->velocity.y * ((float) app.delta_time * VELOCITY_DELTA_T_WEIGHTING);
 
     SDL_FRect *r = &app.entities->player->draw_rect;
     r->x = app.entities->player->location.x - (PLAYER_SIZE / 2.f);
@@ -662,17 +680,10 @@ void handle_player_planets_collisions(void) {
         quit(PlayerDied, NULL);
 }
 
-#pragma region Physic
-
 Vector2f vector_divi(const Vector2f *v, float divisor) {
     assert(divisor > 0);
     const Vector2f res = {v->x / divisor, v->y / divisor};
     return res;
-}
-
-float dot_product(const Vector2f *v1, const Vector2f *v2) {
-    app.entities->player->location.x += app.entities->player->velocity.x;
-    app.entities->player->location.y += app.entities->player->velocity.y;
 }
 
 int vector_normalize(Vector2f *v) {
@@ -787,7 +798,8 @@ void apply_forces(void) {
 
     // Add the player thrust to this list.
     _sum_forces = vectorf_add(&_sum_forces, &player->thrust);
-
+    _sum_forces.x *= GRAV_GENERAL_WEIGHTING;
+    _sum_forces.y *= GRAV_GENERAL_WEIGHTING;
    //  const Vector2f velocity = {(player->direction.x * player->new_speed), (player->direction.y * player->new_speed)};
    // Vector2f result_sum_forces = vectorf_add(&_sum_forces, &velocity);
     Vector2f result_sum_forces = vectorf_add(&_sum_forces, &player->velocity);
@@ -797,8 +809,8 @@ void apply_forces(void) {
     player->speed = new_speed;
 
     vector_normalize(&result_sum_forces);
-    player->velocity.x += (result_sum_forces.x * new_speed) * GRAV_GENERAL_WEIGHTING;
-    player->velocity.y += (result_sum_forces.y * new_speed) * GRAV_GENERAL_WEIGHTING;
+    player->velocity.x += (result_sum_forces.x * new_speed);
+    player->velocity.y += (result_sum_forces.y * new_speed);
 
     Vector2f velocity_to_normalize = player->velocity;
     vector_normalize(&velocity_to_normalize);
@@ -807,15 +819,8 @@ void apply_forces(void) {
     clamp_vector(&player->velocity, MIN_SPEED_VALUE, MAX_SPEED_VALUE);
 }
 
-#pragma endregion // Physic
-
 void game_loop(float delta_time) {
-    app.entities->player->thrust = vector2f_zero;
-
     handle_move_input();
-
-    // printf("%f:%f\n", app.entities->player->thrust.x, app.entities->player->thrust.y);
-    // printf("%i:%i\n", key_flags.left, key_flags.right);
     physic_update();
 }
 
@@ -834,6 +839,11 @@ void quit(const quit_code code, const char *message) {
             break;
         case Victory:
             fprintf(stdout, "%s", "Victory");
+            break;
+        case No_Conf_File:
+            fprintf(stderr, "%s", "No config file found.\n");
+            break;
+        case Config_Invalid:fprintf(stderr, "%s: %s", "is not a valid data.\n", message);
             break;
     }
 
@@ -855,6 +865,7 @@ void quit(const quit_code code, const char *message) {
 }
 
 void handle_move_input() {
+    app.entities->player->thrust = vector2f_zero;
     if (key_flags.left == 1)
         on_left_arrow();
     else if (key_flags.right == 1)
@@ -863,12 +874,20 @@ void handle_move_input() {
 
 void on_left_arrow(void) {
     Player *p = app.entities->player;
-    p->thrust.x = p->direction.y * p->speed * THRUST_SPEED_WEIGHTING;
-    p->thrust.y = -p->direction.x * p->speed * THRUST_SPEED_WEIGHTING;
+    p->thrust.x = p->direction.y * THRUST_SPEED_WEIGHTING;
+    p->thrust.y = -p->direction.x * THRUST_SPEED_WEIGHTING;
+
+    p->thrust.x = -1 * THRUST_SPEED_WEIGHTING;
+
+    if (app.simulation_started)
+        ++app.score; // Inc score for each frame where we "consume fuel"
 }
 
 void on_right_arrow(void) {
     Player *p = app.entities->player;
-    p->thrust.x = -p->direction.y * THRUST_SPEED_WEIGHTING;
-    p->thrust.y = p->direction.x * THRUST_SPEED_WEIGHTING;
+
+    p->thrust.x = 1 * THRUST_SPEED_WEIGHTING;
+
+    if (app.simulation_started)
+        ++app.score; // Inc score for each frame where we "consume fuel"
 }

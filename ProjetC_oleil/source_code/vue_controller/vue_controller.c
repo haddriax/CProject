@@ -1,6 +1,5 @@
 #include "vue_controller.h"
 
-
 const struct SDL_Color red = {0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE};
 const struct SDL_Color green = {0x00, 0xFF, 0x00, SDL_ALPHA_OPAQUE};
 const struct SDL_Color blue = {0x00, 0x00, 0xFF, SDL_ALPHA_OPAQUE};
@@ -10,9 +9,11 @@ const struct SDL_Color white = {0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE};
 const struct SDL_Color grey = {0x40, 0x40, 0x40, SDL_ALPHA_OPAQUE};
 const struct SDL_Color yellow = {0xFA, 0xFA, 0x37, SDL_ALPHA_OPAQUE};
 
-#pragma region Inputs
+KeyFlags key_flags = {0, 0 };
 
-KeyFlags key_flags = {0, 0, 0, 0, 0};
+void FPS_counter_begin(Uint64* start_value) {
+    *start_value = SDL_GetPerformanceCounter();
+}
 
 int handle_inputs(void) {
     // Static <=> this variable exists only ONE time in the app.
@@ -49,18 +50,20 @@ void keyboard_key_down(const SDL_KeyboardEvent *key_event) {
             key_flags.left = 1;
             break;
         case SDLK_UP:
-            key_flags.up = 1;
-            break;
         case SDLK_DOWN:
-            key_flags.down = 1;
             break;
         case SDLK_ESCAPE:
             quit(Exit, NULL);
             break;
+        case SDLK_v:
+            app.show_force_vectors = app.show_force_vectors == 0 ? 1 : 0;
+            break;
         case SDLK_SPACE:
-            key_flags.space = 1;
             // On SPACE pressed, start the simulation.
             if (app.simulation_started == 0) start_simulation();
+            break;
+        default:
+            break;
     }
 }
 
@@ -75,19 +78,13 @@ void keyboard_key_up(const SDL_KeyboardEvent *key_event) {
             key_flags.left = 0;
             break;
         case SDLK_UP:
-            key_flags.up = 0;
-            break;
         case SDLK_DOWN:
-            key_flags.down = 0;
-            break;
+        case SDLK_v:
         case SDLK_SPACE:
-            key_flags.space = 0;
         default:
             break;
     }
 }
-
-#pragma endregion // Inputs
 
 void update_window_name(const int framerate) {
     static char win_name_buffer[128];
@@ -95,9 +92,8 @@ void update_window_name(const int framerate) {
         SDL_SetWindowTitle(render_window.sdl_win, win_name_buffer);
 }
 
-#pragma region Rendering
-
 int draw_circle(SDL_Renderer *renderer, const int32_t centre_x, const int32_t centre_y, const int32_t radius) {
+    // THIS FUNCTION REPLACE GFX
     const int32_t diameter = (radius * 2);
 
     int32_t x = (radius - 1);
@@ -134,6 +130,7 @@ int draw_circle(SDL_Renderer *renderer, const int32_t centre_x, const int32_t ce
 }
 
 int render_fill_circle(SDL_Renderer *renderer, int x, int y, int radius) {
+    // THIS FUNCTION REPLACE GFX
     int offsetx, offsety, d;
     int status;
 
@@ -183,12 +180,12 @@ void render_systems(void) {
         for (int j = 0; j < s->nb_planets; ++j) {
             const Planet *p = &(s->planets[j]);
             assert(p != NULL);
-            // Draw orbit path
+            // Draw the orbit path
             SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(grey));
             draw_circle(render_window.sdl_renderer, (int) s->location.x, (int) s->location.y,
                         (int) (p->orbit < 0 ? (-p->orbit) : p->orbit));
             // Draw Planet
-            SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(cyan));
+            SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(blue));
             render_fill_circle(render_window.sdl_renderer, (int) p->location.x, (int) p->location.y, (int) p->radius);
         }
     }
@@ -197,23 +194,30 @@ void render_systems(void) {
 void render_player(void) {
     Player *p = app.entities->player;
 
-    // Only if velocity vector approximate length is slightly bigger than zero.
-    if (fabsf(p->velocity.x + p->velocity.y) >= 0.05f) {
-        // Render velocity vector.
-        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(blue));
-        SDL_RenderDrawLineF(render_window.sdl_renderer, p->location.x, p->location.y,
-                            (p->location.x + p->velocity.x * 25), (p->location.y + p->velocity.y * 25));
+    // Only if show_force_vectors was set.
+    if (app.show_force_vectors) {
+        // Only if velocity vector approximate length is slightly bigger than zero.
+        if (fabsf(p->velocity.x + p->velocity.y) >= 0.05f) {
+            // Render velocity vector.
+            SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(blue));
+            SDL_RenderDrawLineF(render_window.sdl_renderer, p->location.x, p->location.y,
+                                (p->location.x + p->velocity.x * 25), (p->location.y + p->velocity.y * 25));
 
-        // Render orthogonal vector - left.
-        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
-        SDL_RenderDrawLineF(render_window.sdl_renderer, p->location.x, p->location.y,
-                            (p->location.x + (p->velocity.y * 25)), (p->location.y - (p->velocity.x * 25)));
-        // Render orthogonal vector - right.
-        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(green));
-        SDL_RenderDrawLineF(render_window.sdl_renderer, p->location.x, p->location.y,
-                            (p->location.x - (p->velocity.y * 25)), (p->location.y + (p->velocity.x * 25)));
+
+            /* ONLY IF PLAYER THRUST IS RELATIVE TO ITS VELOCITY
+            // Render orthogonal vector - left.
+            SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
+            SDL_RenderDrawLineF(render_window.sdl_renderer, p->location.x, p->location.y,
+                                (p->location.x + (p->velocity.y * 25)), (p->location.y - (p->velocity.x * 25)));
+            // Render orthogonal vector - right.
+            SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(green));
+            SDL_RenderDrawLineF(render_window.sdl_renderer, p->location.x, p->location.y,
+                                (p->location.x - (p->velocity.y * 25)), (p->location.y + (p->velocity.x * 25)));
+                                */
+        }
     }
 
+    // Render Player Rectangle
     SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
     if (SDL_RenderFillRectF(render_window.sdl_renderer, &(p->draw_rect)) == -1) {
         fprintf(stderr, "%s: %s\n", "SDL could not render Player.",
@@ -235,7 +239,7 @@ void render_border(void) {
 }
 
 void render_gravity_forces(void) {
-    if (!app.simulation_started)
+    if (!app.simulation_started || !app.show_force_vectors)
         return;
 
     for (int i = 0; i < app.entities->nb_solar_systems; ++i)
@@ -265,20 +269,6 @@ void render(void) {
         render_gravity_forces();
         render_player();
 
-
-        static Vector2f vector = {200, 200 };
-        float angle = atan2f(vector.x, vector.y);
-        angle += M_PI / 180.0;
-
-        vector2f_rotate(&vector, angle);
-
-        SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(blue));
-        SDL_RenderDrawLineF(render_window.sdl_renderer,
-                           app.config->window_size.x / 2,
-                            app.config->window_size.y / 2,
-                            app.config->window_size.x + vector.x,
-                            app.config->window_size.y + vector.y);
-
         SDL_RenderPresent(render_window.sdl_renderer); // Finalize rendering.
     } else {
         char error_log[128];
@@ -288,4 +278,40 @@ void render(void) {
     }
 }
 
-#pragma endregion //Rendering
+void run_game(int argc, char **argv) {
+// Counter to avoid changing the window name each frame.
+    char frame_counter_fps_display = 0;
+    // Remember: this expects config.txt path to be the first user passed argument.
+    init_app(argc, argv);
+
+    uint64_t t_end_frame = (SDL_GetTicks64());// - TARGET_FRAME_DURATION);
+
+    // Keep checking if there is any input, even outside of rendering.
+    while (handle_inputs()) {
+        // Store begin frame time in ms since the app launched.
+        uint64_t t_begin_frame = SDL_GetTicks64();
+
+        // Skip the frame if it does not match our target framerate.
+        // I.e., if we compare <last frame end time> with <new time>.
+        if (t_begin_frame - t_end_frame < TARGET_FRAME_DURATION)
+            continue;
+
+        // Update app delta time. (value used in calculations)
+        app.delta_time = (int) (t_begin_frame - t_end_frame);
+
+        if (++frame_counter_fps_display == 5) // every 5 frames
+        {
+            // Display FPS in the render_window title.
+            const int framerate = 1000 / (int) (t_begin_frame - t_end_frame);
+            update_window_name(framerate);
+            frame_counter_fps_display = 0;
+        }
+
+        // Gameplay update
+        game_loop((float) app.delta_time);
+        // Drawing shapes
+        render();
+        // Store end frame time in ms since the app launched.
+        t_end_frame = SDL_GetTicks64();
+    }
+}

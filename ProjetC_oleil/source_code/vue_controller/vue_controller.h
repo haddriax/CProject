@@ -11,6 +11,10 @@ extern const struct SDL_Color white;
 extern const struct SDL_Color grey;
 extern const struct SDL_Color black;
 
+// Expected time for a frame, in milliseconds.
+#define TARGET_FRAME_DURATION (1000 / 60)
+
+void FPS_counter_begin(Uint64 *start_value);
 
 /**
  * \brief Loop.Check Inputs queue and call appropriate function if any is detected.
@@ -42,7 +46,7 @@ void update_window_name(int framerate);
  * \param centre_x 
  * \param centre_y 
  * \param radius 
- * \return 
+ * \return 1 if success
  */
 int draw_circle(SDL_Renderer *renderer, int32_t centre_x, int32_t centre_y, int32_t radius);
 
@@ -52,7 +56,7 @@ int draw_circle(SDL_Renderer *renderer, int32_t centre_x, int32_t centre_y, int3
  * \param x 
  * \param y 
  * \param radius 
- * \return 
+ * \return 1 if success
  */
 int render_fill_circle(SDL_Renderer *renderer, int x, int y, int radius);
 
@@ -90,5 +94,10 @@ void render_clear(void);
  * \brief Execute all the rendering. Loop each frame.
  */
 void render(void);
+
+/**
+ * \brief Init game and maintain game loop.
+ */
+void run_game(int argc, char **argv);
 
 #endif //PROJECTC_OLEIL_VUE_CONTROLLER_H
