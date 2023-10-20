@@ -45,7 +45,7 @@
 #define PLAYER_SIZE 10
 
 /**
- * Tweaks those values to customize game experiencedd
+ * Tweaks those values to customize game experience
  */
 #define GRAVITY_CONST 1000.0f
 #define GRAV_DISTANCE_WEIGHTING 1.4f
