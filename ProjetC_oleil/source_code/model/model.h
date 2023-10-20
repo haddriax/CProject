@@ -41,14 +41,17 @@
 #define MAX_SPEED_VALUE 8.0f
 #define MIN_SPEED_VALUE 2.0f
 
-#define GRAVITY_CONST 1000.0f
-#define GRAV_DISTANCE_WEIGHTING 1.4f
-#define GRAV_GENERAL_WEIGHTING 0.6f
-#define THRUST_SPEED_WEIGHTING 1.6f
-#define VELOCITY_DELTA_T_WEIGHTING 0.045f
-
 #define CONFIG_BUFFER_MAX_SIZE 32
 #define PLAYER_SIZE 10
+
+/**
+ * Tweaks those values to customize game experiencedd
+ */
+#define GRAVITY_CONST 1000.0f
+#define GRAV_DISTANCE_WEIGHTING 1.4f
+#define GRAV_GENERAL_WEIGHTING 0.24f
+#define THRUST_SPEED_WEIGHTING 1.6f
+#define VELOCITY_DELTA_T_WEIGHTING 0.045f
 
 /**
  * \brief Identifier for any line in config.txt

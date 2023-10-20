@@ -93,7 +93,6 @@ void update_window_name(const int framerate) {
 int draw_circle(SDL_Renderer *renderer, const int32_t centre_x, const int32_t centre_y, const int32_t radius) {
     // THIS FUNCTION REPLACE GFX
     const int32_t diameter = (radius * 2);
-
     int32_t x = (radius - 1);
     int32_t y = 0;
     int32_t tx = 1;
@@ -240,6 +239,7 @@ void render_gravity_forces(void) {
     if (!app.simulation_started || !app.show_force_vectors)
         return;
 
+    int offset = 0;
     for (int i = 0; i < app.entities->nb_solar_systems; ++i)
     {
         assert(app.entities->solar_systems[i]);
@@ -248,8 +248,21 @@ void render_gravity_forces(void) {
         SDL_RenderDrawLineF(render_window.sdl_renderer,
                             s->location.x,
                             s->location.y,
-                            s->location.x - app.list_forces[i].x * 10,
-                            s->location.y - app.list_forces[i].y * 10);
+                            s->location.x - app.list_forces[i + offset].x * 10,
+                            s->location.y - app.list_forces[i + offset].y * 10);
+
+        for (int j = 0; j < s->nb_planets; ++j)
+        {
+            assert(app.entities->solar_systems[i]->planets);
+            Planet *p = &(app.entities->solar_systems[i]->planets[j]);
+            SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
+            SDL_RenderDrawLineF(render_window.sdl_renderer,
+                                p->location.x,
+                                p->location.y,
+                                p->location.x - app.list_forces[i + j + offset + 1].x * 100,
+                                p->location.y - app.list_forces[i + j + offset + 1].y * 100);
+        }
+        offset += s->nb_planets;
     }
 }
 

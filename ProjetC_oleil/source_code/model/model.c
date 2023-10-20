@@ -523,6 +523,14 @@ void init_app(const int n_args, char **argv) {
         app.entities->player->location.y = app.config->player_start.y;
     }
 
+    int max_forces = 0;
+    for (int i = 0; i < app.entities->nb_solar_systems; ++i)
+    {
+        max_forces += (app.entities->solar_systems[i]->nb_planets + 1);
+    }
+
+    app.list_forces = calloc(max_forces, sizeof(Vector2f));
+
     //Create and initialize display.
     init_render_window((int) app.config->window_size.x, (int) app.config->window_size.y, APP_DEFAULT_NAME);
 
@@ -721,6 +729,17 @@ float calculate_distance(const SolarSystem *s) {
     return sqrtf((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
 
+float calculate_distance_planet(const Planet *p) {
+    const SDL_FPoint p_loc = app.entities->player->location;
+    const float x1 = p_loc.x;
+    const float y1 = p_loc.y;
+
+    const float x2 = p->location.x;
+    const float y2 = p->location.y;
+
+    return sqrtf((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+}
+
 Vector2f grav_force(const SolarSystem *s) {
     assert(GRAV_DISTANCE_WEIGHTING != 0);
     Vector2f dir = direction_from_FPoint(&s->location, &app.entities->player->location);
@@ -728,6 +747,17 @@ Vector2f grav_force(const SolarSystem *s) {
     const float mass_star = s->mass;
     const float dist = calculate_distance(s);
     const float F = GRAVITY_CONST * (mass_player * mass_star) / (dist * dist * GRAV_DISTANCE_WEIGHTING);
+    const Vector2f v = {F * dir.x, F * dir.y};
+    return v;
+}
+
+Vector2f grav_force_planet(const Planet *p) {
+    assert(GRAV_DISTANCE_WEIGHTING != 0);
+    Vector2f dir = direction_from_FPoint(&p->location, &app.entities->player->location);
+    const float mass_player = app.entities->player->mass;
+    const float mass_planet = p->radius;
+    const float dist = calculate_distance_planet(p);
+    const float F = GRAVITY_CONST * (mass_player * mass_planet) / (dist * dist * GRAV_DISTANCE_WEIGHTING);
     const Vector2f v = {F * dir.x, F * dir.y};
     return v;
 }
@@ -788,9 +818,16 @@ void apply_forces(void) {
     Vector2f *list_forces = app.list_forces;
 
     // Get a list of attraction forces on player from all systems.
-    for (int i = 0; i < app.nb_forces; i++)
+
+    int offset = 0;
+    for (int i = 0; i < app.entities->nb_solar_systems; i++)
     {
-        list_forces[i] = grav_force(systems[i]);
+        list_forces[i + offset] = grav_force(systems[i]);
+        for (int j = 0; j < systems[i]->nb_planets; j++)
+        {
+            list_forces[i + j + offset + 1] = grav_force_planet(&systems[i]->planets[j]);
+        }
+        offset += systems[i]->nb_planets;
     }
 
     // Compute the sum of this list.
