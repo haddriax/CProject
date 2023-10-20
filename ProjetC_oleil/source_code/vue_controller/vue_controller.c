@@ -11,10 +11,6 @@ const struct SDL_Color yellow = {0xFA, 0xFA, 0x37, SDL_ALPHA_OPAQUE};
 
 KeyFlags key_flags = {0, 0 };
 
-void FPS_counter_begin(Uint64* start_value) {
-    *start_value = SDL_GetPerformanceCounter();
-}
-
 int handle_inputs(void) {
     // Static <=> this variable exists only ONE time in the app.
     static SDL_Event e;
@@ -88,8 +84,10 @@ void keyboard_key_up(const SDL_KeyboardEvent *key_event) {
 
 void update_window_name(const int framerate) {
     static char win_name_buffer[128];
-    if (sprintf_s(win_name_buffer, 128, "%s | FPS : %i | Score : %i", APP_DEFAULT_NAME, framerate, app.score))
+    int result = snprintf(win_name_buffer, sizeof(win_name_buffer), "%s | FPS : %i | Score : %i", APP_DEFAULT_NAME, framerate, app.score);
+    if (result >= 0 && result < sizeof(win_name_buffer)) {
         SDL_SetWindowTitle(render_window.sdl_win, win_name_buffer);
+    }
 }
 
 int draw_circle(SDL_Renderer *renderer, const int32_t centre_x, const int32_t centre_y, const int32_t radius) {

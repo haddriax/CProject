@@ -14,8 +14,6 @@ extern const struct SDL_Color black;
 // Expected time for a frame, in milliseconds.
 #define TARGET_FRAME_DURATION (1000 / 60)
 
-void FPS_counter_begin(Uint64 *start_value);
-
 /**
  * \brief Loop.Check Inputs queue and call appropriate function if any is detected.
  * \return: 0 if user request to exit app, 1 otherwise.
