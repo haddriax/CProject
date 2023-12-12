@@ -17,9 +17,6 @@
 #include <math.h>
 #include <time.h>
 
-// /!\ @todo: bug fix: check why it modifies the config reading behavior.
-#define PRINT_CONFIG_CREATION 0
-
 #define APP_DEFAULT_NAME "Projet C"
 
 #define CONFIG_DEFAULT_NAME "config.txt"

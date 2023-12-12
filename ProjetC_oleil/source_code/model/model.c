@@ -39,9 +39,6 @@ Config *load_config(const char *file_name) {
 
             while (fgets(line, max_config_lines, file)) {
 
-                // if (line[0] == '\n') continue; // Do we accept blank lines?
-                // (if yes, it must be done in build_systems too)
-
                 // 0/ Prepare a buffer.
                 char config_name[CONFIG_BUFFER_MAX_SIZE];
 
@@ -210,21 +207,12 @@ void process_data(const char *data, const config_type type, FILE *file, int *lin
     switch (type) {
         case window_size:
             app.config->window_size = read_vector(data);
-#if PRINT_CONFIG_CREATION
-            printf("Window size set to %i:%i\n", app.config->window_size.x, app.config->window_size.y);
-#endif
             break;
         case player_location:
             app.config->player_start = read_float_point(data);
-#if PRINT_CONFIG_CREATION
-            printf("Player start set to %f:%f\n", app.config->player_start.x, app.config->player_start.y);
-#endif
             break;
         case goal_location:
             app.config->goal_end = read_float_point(data);
-#if PRINT_CONFIG_CREATION
-            printf("Goal set to %f:%f\n", app.config->goal_end.x, app.config->goal_end.y);
-#endif
             break;
         case nb_solar_system:
             app.config->nb_solar_systems = read_int(data);
@@ -233,9 +221,6 @@ void process_data(const char *data, const config_type type, FILE *file, int *lin
             app.list_forces = calloc(app.entities->nb_solar_systems, sizeof(Vector2f));
             app.nb_forces = app.entities->nb_solar_systems;
             assert(app.entities->solar_systems != NULL);
-#if PRINT_CONFIG_CREATION
-            printf("Number of systems set to %i\n", app.config->nb_solar_systems);
-#endif
             break;
         case star_pos:
             build_system(file, line_index, read_vector(data));
@@ -279,6 +264,7 @@ Vector2f read_vector(const char *data) {
 }
 
 SDL_FPoint read_float_point(const char *data) {
+
     // Find space separating x and y value
     int char_index = 0;
     while (data[char_index] != SEPARATOR_SPACE && char_index < CONFIG_BUFFER_MAX_SIZE)
@@ -289,7 +275,7 @@ SDL_FPoint read_float_point(const char *data) {
     // Get char until the separator index is found.
     char x[8];
     int i = 0;
-    for (; i < char_index - 1; ++i)
+    for (; i < char_index; ++i)
         x[i] = data[i];
     x[i + 1] = '\0';
 
@@ -449,10 +435,6 @@ Planet *build_planet(SolarSystem *parent_system, const float orbit, const float 
         p->location.x = (float) parent_system->location.x + (float) orbit * cosf(0);
         p->location.y = (float) parent_system->location.y + (float) orbit * sinf(0);
         p->parent_system = parent_system;
-
-#if PRINT_CONFIG_CREATION
-        printf("    Create planet: radius[%i]|orbit[%i].\n", radius, orbit);
-#endif
 
         return &(parent_system->planets[index]);
     }

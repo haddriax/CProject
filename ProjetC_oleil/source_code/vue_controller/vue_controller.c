@@ -199,18 +199,6 @@ void render_player(void) {
             SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(blue));
             SDL_RenderDrawLineF(render_window.sdl_renderer, p->location.x, p->location.y,
                                 (p->location.x + p->velocity.x * 25), (p->location.y + p->velocity.y * 25));
-
-
-            /* ONLY IF PLAYER THRUST IS RELATIVE TO ITS VELOCITY
-            // Render orthogonal vector - left.
-            SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(red));
-            SDL_RenderDrawLineF(render_window.sdl_renderer, p->location.x, p->location.y,
-                                (p->location.x + (p->velocity.y * 25)), (p->location.y - (p->velocity.x * 25)));
-            // Render orthogonal vector - right.
-            SDL_SetRenderDrawColor(render_window.sdl_renderer, COLOR_PARAMS(green));
-            SDL_RenderDrawLineF(render_window.sdl_renderer, p->location.x, p->location.y,
-                                (p->location.x - (p->velocity.y * 25)), (p->location.y + (p->velocity.x * 25)));
-                                */
         }
     }
 
