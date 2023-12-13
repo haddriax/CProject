@@ -218,8 +218,8 @@ void process_data(const char *data, const config_type type, FILE *file, int *lin
             app.config->nb_solar_systems = read_int(data);
             app.entities->nb_solar_systems = app.config->nb_solar_systems;
             app.entities->solar_systems = malloc(app.config->nb_solar_systems * sizeof(SolarSystem));
-            app.list_forces = calloc(app.entities->nb_solar_systems, sizeof(Vector2f));
-            app.nb_forces = app.entities->nb_solar_systems;
+            // app.  = calloc(app.entities->nb_solar_systems, sizeof(Vector2f));
+            // app.nb_forces = app.entities->nb_solar_systems;
             assert(app.entities->solar_systems != NULL);
             break;
         case star_pos:
@@ -419,10 +419,6 @@ SolarSystem *build_system(FILE *file, int *line_index, Vector2f spawn_location) 
     } else
         return NULL;
 
-#if PRINT_CONFIG_CREATION
-    printf("Created solar system nb %i of radius:%i, at [%i:%i].\n", creation_id, s->radius, s->location.x, s->location.y);
-#endif
-
     return (app.entities->solar_systems[creation_id++]);
 }
 
@@ -505,12 +501,13 @@ void init_app(const int n_args, char **argv) {
         app.entities->player->location.y = app.config->player_start.y;
     }
 
+    // Allocate space for as much forces as there is Systems + Planets
     int max_forces = 0;
     for (int i = 0; i < app.entities->nb_solar_systems; ++i)
     {
         max_forces += (app.entities->solar_systems[i]->nb_planets + 1);
     }
-
+    app.nb_forces = max_forces;
     app.list_forces = calloc(max_forces, sizeof(Vector2f));
 
     //Create and initialize display.
@@ -617,7 +614,7 @@ void player_update(void) {
 
 void clamp_vector(Vector2f *v, float min, float max) {
     assert(min > 0 && max > min && v != NULL);
-    float magnitude = sqrtf(v->x * v->x + v->y * v->y);
+    const float magnitude = sqrtf(v->x * v->x + v->y * v->y);
 
     if (magnitude < min) {
         v->x = v->x * min / magnitude;
