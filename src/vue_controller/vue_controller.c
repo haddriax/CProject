@@ -85,7 +85,7 @@ void keyboard_key_up(const SDL_KeyboardEvent *key_event) {
 void update_window_name(const int framerate) {
     static char win_name_buffer[128];
     int result = snprintf(win_name_buffer, sizeof(win_name_buffer), "%s | FPS : %i | Score : %i", APP_DEFAULT_NAME, framerate, app.score);
-    if (result >= 0 && result < sizeof(win_name_buffer)) {
+    if (result >= 0 && result < (int)sizeof(win_name_buffer)) {
         SDL_SetWindowTitle(render_window.sdl_win, win_name_buffer);
     }
 }
