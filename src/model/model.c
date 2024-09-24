@@ -15,7 +15,6 @@ Config *load_config(const char *file_name) {
     app.config = calloc(1, sizeof(Config));
 
     assert(app.config);
-    assert(file_name);
 
     if (file_name != NULL) {
         int line_index = 0; // @todo Should be remove, check for usages before.
@@ -142,6 +141,7 @@ char *get_data_from_line(const char *line, const int data_start) {
 }
 
 int validate_is_int(const char *data) {
+    assert(data);
     for (size_t i = 0; i < SDL_strlen(data); ++i) {
         if (SDL_isspace(data[i])) // Want no space
             return 0;
@@ -152,6 +152,7 @@ int validate_is_int(const char *data) {
 }
 
 int validate_is_signed_int(const char *data) {
+    assert(data);
     size_t i = 0;
     // Check if the first char is the sign
     if (data[0] == SEPARATOR_SUBSTRACT)
@@ -168,6 +169,7 @@ int validate_is_signed_int(const char *data) {
 }
 
 int validate_is_vector(const char *data) {
+    assert(data);
     int space_counter = 0;
     for (size_t i = 0; i < SDL_strlen(data); ++i) {
         if (SDL_isspace(data[i])) // Want exactly one space
@@ -235,6 +237,7 @@ void process_data(const char *data, const config_type type, FILE *file, int *lin
 }
 
 Vector2f read_vector(const char *data) {
+    assert(data);
     // Find space separating x and y value
     int char_index = 0;
     while (data[char_index] != SEPARATOR_SPACE && char_index < CONFIG_BUFFER_MAX_SIZE)
@@ -264,7 +267,7 @@ Vector2f read_vector(const char *data) {
 }
 
 SDL_FPoint read_float_point(const char *data) {
-
+    assert(data);
     // Find space separating x and y value
     int char_index = 0;
     while (data[char_index] != SEPARATOR_SPACE && char_index < CONFIG_BUFFER_MAX_SIZE)
@@ -295,6 +298,7 @@ SDL_FPoint read_float_point(const char *data) {
 }
 
 int read_int(const char *data) {
+    assert(data);
     const int data_length = (int) SDL_strlen(data);
     for (int i = 0; i < (data_length - 1); ++i) {
         if (!SDL_isalnum((int) data[i])) {
@@ -308,6 +312,7 @@ int read_int(const char *data) {
 }
 
 int read_signed_int(const char *data) {
+    assert(data);
     const int data_length = (int) SDL_strlen(data);
     assert(data_length > 0);
 
@@ -336,11 +341,11 @@ SolarSystem *build_system(FILE *file, int *line_index, Vector2f spawn_location) 
     // Create a new system.
     SolarSystem *s = calloc(1, sizeof(SolarSystem));
     app.entities->solar_systems[creation_id] = s;
-    if (s != NULL) {
-        s->location.x = spawn_location.x;
-        s->location.y = spawn_location.y;
-        // printf("STAR POS [%i:%i]\n", s->location.x, s->location.y);
-    }
+    assert(s);
+
+    s->location.x = spawn_location.x;
+    s->location.y = spawn_location.y;
+    // printf("STAR POS [%i:%i]\n", s->location.x, s->location.y);
 
     // STAR RADIUS -> int
     if (fgets(line, 64, file) != NULL) {
@@ -412,7 +417,7 @@ SolarSystem *build_system(FILE *file, int *line_index, Vector2f spawn_location) 
                 free(p_data);
             }
             // Use read data to create a planet.
-            build_planet(s, orbit, radius, i);
+            build_planet(s, (float)orbit, (float)radius, i);
         }
 
         free(data);
@@ -581,8 +586,8 @@ void vector2f_rotate(Vector2f *v, float delta_rad) {
 }
 
 int is_colliding_rect_circle(const SDL_FRect *rect, const SDL_FPoint *location, float radius) {
-    float dist_x = fabsf(location->x - rect->x);
-    float dist_y = fabsf(location->y - rect->y);
+    const float dist_x = fabsf(location->x - rect->x);
+    const float dist_y = fabsf(location->y - rect->y);
     if (dist_x > (rect->w / 2 + radius)) return 0;
     if (dist_y > (rect->h / 2 + radius)) return 0;
     if (dist_x <= (rect->w / 2)) return 1;
@@ -613,6 +618,7 @@ void player_update(void) {
 }
 
 void clamp_vector(Vector2f *v, float min, float max) {
+    assert(v);
     assert(min > 0 && max > min && v != NULL);
     const float magnitude = sqrtf(v->x * v->x + v->y * v->y);
 
